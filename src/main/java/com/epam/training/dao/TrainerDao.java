@@ -3,12 +3,13 @@ package com.epam.training.dao;
 import com.epam.training.model.Trainer;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface TrainerDao {
 
     void save(Trainer trainer);
 
-    Trainer findById(Long id);
+    Optional<Trainer> findById(Long id);
 
     List<Trainer> findAll();
 
