@@ -5,12 +5,14 @@ import com.epam.training.model.Trainer;
 import com.epam.training.model.Training;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Import;
 
 import java.util.HashMap;
 import java.util.Map;
 
 
 @Configuration
+@Import({PropertyConfig.class, StorageInitializer.class})
 public class StorageConfig {
 
     @Bean

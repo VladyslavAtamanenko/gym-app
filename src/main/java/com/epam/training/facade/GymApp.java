@@ -4,6 +4,8 @@ import com.epam.training.dto.*;
 import com.epam.training.service.TraineeService;
 import com.epam.training.service.TrainerService;
 import com.epam.training.service.TrainingService;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -12,6 +14,8 @@ import java.util.Optional;
 
 @Component
 public class GymApp {
+
+    private static final Log LOGGER = LogFactory.getLog(GymApp.class);
 
     private final TraineeService traineeService;
     private final TrainerService trainerService;
@@ -25,50 +29,66 @@ public class GymApp {
     }
 
     TraineeCreateResponse createTrainee(TraineeCreateRequest trainee){
+        LOGGER.debug("Facade request received: create trainee");
         return traineeService.create(trainee);
     }
 
     TraineeDTO updateTrainee(TraineeDTO trainee){
+        LOGGER.debug("Facade request received: update trainee. traineeId="
+                + (trainee == null ? null : trainee.getId()));
         return traineeService.update(trainee);
     }
 
     void deleteTrainee(Long id){
+        LOGGER.debug("Facade request received: delete trainee. traineeId=" + id);
         traineeService.delete(id);
     }
 
     Optional<TraineeDTO> findTraineeById(Long id){
+        LOGGER.debug("Facade request received: find trainee. traineeId=" + id);
         return traineeService.findById(id);
     }
 
     List<TraineeDTO> findAllTrainees(){
+        LOGGER.debug("Facade request received: list trainees");
         return traineeService.findAll();
     }
 
     TrainerCreateResponse createTrainer(TrainerCreateRequest trainer){
+        LOGGER.debug("Facade request received: create trainer");
         return trainerService.create(trainer);
     }
 
     TrainerDTO updateTrainer(TrainerDTO trainer){
+        LOGGER.debug("Facade request received: update trainer. trainerId="
+                + (trainer == null ? null : trainer.getId()));
         return trainerService.update(trainer);
     }
 
     Optional<TrainerDTO> findTrainerById(Long id){
+        LOGGER.debug("Facade request received: find trainer. trainerId=" + id);
         return trainerService.findById(id);
     }
 
     List<TrainerDTO> findAllTrainers(){
+        LOGGER.debug("Facade request received: list trainers");
         return trainerService.findAll();
     }
 
     TrainingDTO createTraining(TrainingCreateRequest training){
+        LOGGER.debug("Facade request received: create training. traineeId="
+                + (training == null ? null : training.getTraineeId())
+                + ", trainerId=" + (training == null ? null : training.getTrainerId()));
         return trainingService.create(training);
     }
 
     Optional<TrainingDTO> findTrainingById(Long id){
+        LOGGER.debug("Facade request received: find training. trainingId=" + id);
         return trainingService.findById(id);
     }
 
     List<TrainingDTO> findAllTrainings(){
+        LOGGER.debug("Facade request received: list trainings");
         return trainingService.findAll();
     }
 }

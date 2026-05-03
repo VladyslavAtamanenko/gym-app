@@ -24,6 +24,8 @@ import static org.junit.jupiter.api.Assertions.*;
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 class TrainerDaoTest {
 
+    private static final int SEEDED_RECORDS_COUNT = 10;
+
     @Autowired
     private TrainerDao dao;
 
@@ -95,7 +97,7 @@ class TrainerDaoTest {
         dao.save(t2);
 
         List<Trainer> all = dao.findAll();
-        assertEquals(2, all.size());
+        assertEquals(SEEDED_RECORDS_COUNT + 2, all.size());
     }
 
     @Test
@@ -111,8 +113,8 @@ class TrainerDaoTest {
     }
 
     @Test
-    @DisplayName("FindAll on empty DAO should return empty list")
-    void testFindAllEmpty() {
-        assertTrue(dao.findAll().isEmpty());
+    @DisplayName("FindAll should return seeded trainers")
+    void testFindAllSeeded() {
+        assertEquals(SEEDED_RECORDS_COUNT, dao.findAll().size());
     }
 }

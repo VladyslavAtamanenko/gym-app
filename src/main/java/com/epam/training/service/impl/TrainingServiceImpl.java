@@ -11,6 +11,8 @@ import com.epam.training.model.Trainee;
 import com.epam.training.model.Trainer;
 import com.epam.training.model.Training;
 import com.epam.training.service.TrainingService;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -21,6 +23,8 @@ import java.util.stream.Collectors;
 
 @Service
 public class TrainingServiceImpl implements TrainingService {
+
+    private static final Log LOGGER = LogFactory.getLog(TrainingServiceImpl.class);
 
     ToEntityMapper<TrainingCreateRequest, Training> trainingCreateRequestMapper;
 
@@ -37,37 +41,55 @@ public class TrainingServiceImpl implements TrainingService {
 
     @Override
     public TrainingDTO create(TrainingCreateRequest training) {
+        if (training == null) {
+            LOGGER.warn("Rejected training creation request because request body is null");
+            throw new IllegalArgumentException();
+        }
 
         Long traineeId = training.getTraineeId();
         Long trainerId = training.getTrainerId();
+        LOGGER.debug("Creating training. traineeId=" + traineeId + ", trainerId=" + trainerId);
 
         Trainee trainee = traineeDao
                 .findById(traineeId)
-                .orElseThrow(NoSuchElementException::new);
+                .orElseThrow(() -> {
+                    LOGGER.warn("Training creation failed because trainee was not found. traineeId=" + traineeId);
+                    return new NoSuchElementException();
+                });
 
         Trainer trainer = trainerDao
                 .findById(trainerId)
-                .orElseThrow(NoSuchElementException::new);
+                .orElseThrow(() -> {
+                    LOGGER.warn("Training creation failed because trainer was not found. trainerId=" + trainerId);
+                    return new NoSuchElementException();
+                });
 
         Training created = trainingCreateRequestMapper.toEntity(training);
 
         created.setTrainee(trainee);
         created.setTrainer(trainer);
 
-        return trainingMapper.toDTO(trainingDao.save(created));
+        Training saved = trainingDao.save(created);
+        LOGGER.info("Training created successfully. trainingId=" + saved.getId()
+                + ", traineeId=" + traineeId + ", trainerId=" + trainerId);
+        return trainingMapper.toDTO(saved);
     }
 
     @Override
     public Optional<TrainingDTO> findById(Long id) {
-        return trainingDao.findById(id).map(trainingMapper::toDTO);
+        Optional<TrainingDTO> result = trainingDao.findById(id).map(trainingMapper::toDTO);
+        LOGGER.debug("Training lookup completed. trainingId=" + id + ", found=" + result.isPresent());
+        return result;
     }
 
     @Override
     public List<TrainingDTO> findAll() {
-        return trainingDao.findAll()
+        List<TrainingDTO> result = trainingDao.findAll()
                 .stream()
                 .map(trainingMapper::toDTO)
                 .collect(Collectors.toList());
+        LOGGER.debug("Training list retrieved. count=" + result.size());
+        return result;
     }
 
     @Autowired

@@ -1,0 +1,11 @@
+id,traineeId,trainerId,name,typeId,date,durationMinutes
+1,1,1,Morning Workout,1,2025-01-01T10:00,60
+2,2,2,Yoga Session,2,2025-01-02T11:00,45
+3,3,3,Fitness Training,1,2025-01-03T12:00,50
+4,4,4,Pilates,3,2025-01-04T09:30,40
+5,5,5,Cardio Blast,2,2025-01-05T08:00,30
+6,6,6,Strength Training,1,2025-01-06T13:00,70
+7,7,7,Stretching,3,2025-01-07T14:00,20
+8,8,8,Yoga Flow,2,2025-01-08T15:00,55
+9,9,9,CrossFit,1,2025-01-09T16:00,65
+10,10,10,Relax Yoga,2,2025-01-10T17:00,35
