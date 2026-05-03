@@ -7,7 +7,7 @@ import java.util.Optional;
 
 public interface TrainingDao {
 
-    void save(Training trainee);
+    Training save(Training training);
 
     Optional<Training> findById(Long id);
 

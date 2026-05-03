@@ -24,125 +24,95 @@ import static org.junit.jupiter.api.Assertions.*;
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 class TrainerDaoTest {
 
-    private static final TrainingType FITNESS = new TrainingType(1L, "Fitness");
-    private static final TrainingType YOGA = new TrainingType(2L, "Yoga");
-
     @Autowired
     private TrainerDao dao;
 
     private Trainer trainer;
-    private User user;
+
+    private static final TrainingType FITNESS = new TrainingType(1L, "Fitness");
+    private static final TrainingType YOGA = new TrainingType(2L, "Yoga");
 
     @BeforeEach
     void setUp() {
-
-
-        user = new User();
-        user.setId(1L);
-        user.setFirstName("Alice");
-        user.setLastName("Smith");
-        user.setUserName("asmith");
-        user.setPassword("pass");
-        user.setIsActive(true);
-
         trainer = new Trainer();
-        trainer.setId(1L);
         trainer.setSpecialization(FITNESS);
-        trainer.setUserInfo(user);
+    }
+
+    @Test
+    @DisplayName("Save with null ID should generate ID")
+    void testSaveGeneratesId() {
+        Trainer saved = dao.save(trainer);
+
+        assertNotNull(saved.getId());
+        assertTrue(dao.findById(saved.getId()).isPresent());
+    }
+
+    @Test
+    @DisplayName("Save should persist specialization")
+    void testSavePersistsSpecialization() {
+        Trainer saved = dao.save(trainer);
+
+        Trainer found = dao.findById(saved.getId()).orElseThrow();
+
+        assertEquals(FITNESS.getId(), found.getSpecialization().getId());
+        assertEquals(FITNESS.getName(), found.getSpecialization().getName());
+    }
+
+    @Test
+    @DisplayName("Save with existing ID should update specialization")
+    void testSaveUpdatesExisting() {
+        Trainer saved = dao.save(trainer);
+
+        saved.setSpecialization(YOGA);
+        dao.save(saved);
+
+        Trainer updated = dao.findById(saved.getId()).orElseThrow();
+
+        assertEquals(YOGA.getId(), updated.getSpecialization().getId());
+        assertEquals(YOGA.getName(), updated.getSpecialization().getName());
     }
 
 
     @Test
-    @DisplayName("Save and FindById should persist and retrieve trainer")
-    void testSaveAndFindById() {
-        dao.save(trainer);
-        Optional<Trainer> found = dao.findById(1L);
+    @DisplayName("FindById should return trainer if exists")
+    void testFindById() {
+        Trainer saved = dao.save(trainer);
+
+        Optional<Trainer> found = dao.findById(saved.getId());
+
         assertTrue(found.isPresent());
-        assertEquals(FITNESS, found.get().getSpecialization());
+        assertEquals(FITNESS.getName(), found.get().getSpecialization().getName());
     }
 
     @Test
     @DisplayName("FindAll should return all trainers")
     void testFindAll() {
         dao.save(trainer);
-        Trainer trainer2 = new Trainer();
-        trainer2.setId(2L);
-        trainer2.setSpecialization(YOGA);
-        trainer2.setUserInfo(user);
-        dao.save(trainer2);
+
+        Trainer t2 = new Trainer();
+        t2.setSpecialization(YOGA);
+
+        dao.save(t2);
 
         List<Trainer> all = dao.findAll();
         assertEquals(2, all.size());
     }
 
     @Test
-    @DisplayName("Update should modify trainer details")
-    void testUpdate() {
-        dao.save(trainer);
-        trainer.setSpecialization(YOGA);
-        dao.update(trainer);
-        Optional<Trainer> updated = dao.findById(1L);
-        assertTrue(updated.isPresent());
-        assertEquals(YOGA, updated.get().getSpecialization());
-    }
-
-    @Test
-    @DisplayName("Save null trainer should throw exception")
-    void testSaveNullTrainerThrowsException() {
-        assertThrows(IllegalArgumentException.class, () -> dao.save(null));
-    }
-
-    @Test
-    @DisplayName("Save trainer with null ID should throw exception")
-    void testSaveTrainerWithNullIdThrowsException() {
-        Trainer trainer = new Trainer();
-        trainer.setId(null);
-        assertThrows(IllegalArgumentException.class, () -> dao.save(trainer));
-    }
-
-    @Test
-    @DisplayName("Save duplicate ID should throw exception")
-    void testSaveDuplicateIdThrowsException() {
-        Trainer trainer1 = new Trainer();
-        trainer1.setId(1L);
-        dao.save(trainer1);
-        Trainer trainer2 = new Trainer();
-        trainer2.setId(1L);
-        assertThrows(IllegalArgumentException.class, () -> dao.save(trainer2));
-    }
-
-    @Test
-    @DisplayName("FindById for non-existent ID should return empty Optional")
-    void testFindByIdNotFoundReturnsEmpty() {
+    @DisplayName("FindById for non-existent ID should return empty")
+    void testFindByIdNotFound() {
         assertTrue(dao.findById(999L).isEmpty());
     }
 
     @Test
-    @DisplayName("Update non-existent trainer should throw exception")
-    void testUpdateNonExistentTrainerThrowsException() {
-        Trainer trainer = new Trainer();
-        trainer.setId(1L);
-        Assertions.assertThrows(NoSuchElementException.class, () -> dao.update(trainer));
-    }
-
-    @Test
-    @DisplayName("Update null trainer should throw exception")
-    void testUpdateNullTrainerThrowsException() {
-        Assertions.assertThrows(IllegalArgumentException.class, () -> dao.update(null));
-    }
-
-    @Test
-    @DisplayName("Update trainer with null ID should throw exception")
-    void testUpdateTrainerWithNullIdThrowsException() {
-        Trainer trainer = new Trainer();
-        trainer.setId(null);
-        Assertions.assertThrows(IllegalArgumentException.class, () -> dao.update(trainer));
+    @DisplayName("Save null trainer should throw exception")
+    void testSaveNullThrows() {
+        assertThrows(IllegalArgumentException.class, () -> dao.save(null));
     }
 
     @Test
     @DisplayName("FindAll on empty DAO should return empty list")
-    void testFindAllEmptyReturnsEmptyList() {
-        Assertions.assertTrue(dao.findAll().isEmpty());
+    void testFindAllEmpty() {
+        assertTrue(dao.findAll().isEmpty());
     }
-
 }

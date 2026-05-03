@@ -12,7 +12,6 @@ import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 
 import java.time.LocalDate;
 import java.util.List;
-import java.util.NoSuchElementException;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -30,7 +29,6 @@ class TraineeDaoTest {
     @BeforeEach
     void setUp() {
         user = new User();
-        user.setId(1L);
         user.setFirstName("John");
         user.setLastName("Doe");
         user.setUserName("jdoe");
@@ -38,121 +36,83 @@ class TraineeDaoTest {
         user.setIsActive(true);
 
         trainee = new Trainee();
-        trainee.setId(1L);
         trainee.setDateOfBirth(LocalDate.of(1990, 1, 1));
         trainee.setAddress("123 Main St");
         trainee.setUser(user);
     }
 
+    @Test
+    @DisplayName("Save with null ID should generate ID and persist")
+    void testSaveGeneratesId() {
+        Trainee saved = dao.save(trainee);
 
-        @Test
-        @DisplayName("Save and FindById should persist and retrieve trainee")
-        void testSaveAndFindById() {
-            dao.save(trainee);
-            Optional<Trainee> found = dao.findById(1L);
-            assertTrue(found.isPresent());
-            assertEquals("123 Main St", found.get().getAddress());
-        }
-
-        @Test
-        @DisplayName("FindAll should return all trainees")
-        void testFindAll() {
-            dao.save(trainee);
-            Trainee trainee2 = new Trainee();
-            trainee2.setId(2L);
-            trainee2.setDateOfBirth(LocalDate.of(1992, 2, 2));
-            trainee2.setAddress("456 Elm St");
-            trainee2.setUser(user);
-            dao.save(trainee2);
-
-            List<Trainee> all = dao.findAll();
-            assertEquals(2, all.size());
-        }
-
-        @Test
-        @DisplayName("Update should modify trainee details")
-        void testUpdate() {
-            dao.save(trainee);
-            trainee.setAddress("New Address");
-            dao.update(trainee);
-            Optional<Trainee> updated = dao.findById(1L);
-            assertTrue(updated.isPresent());
-            assertEquals("New Address", updated.get().getAddress());
-        }
-
-        @Test
-        @DisplayName("Delete should remove trainee")
-        void testDelete() {
-            dao.save(trainee);
-            dao.delete(1L);
-            assertFalse(dao.findById(1L).isPresent());
-            assertTrue(dao.findAll().isEmpty());
-        }
-
-        @Test
-        @DisplayName("Save null trainee should throw exception")
-        void testSaveNullTraineeThrowsException() {
-            assertThrows(IllegalArgumentException.class, () -> dao.save(null));
-        }
-
-        @Test
-        @DisplayName("Save trainee with null ID should throw exception")
-        void testSaveTraineeWithNullIdThrowsException() {
-            Trainee trainee = new Trainee();
-            trainee.setId(null);
-            assertThrows(IllegalArgumentException.class, () -> dao.save(trainee));
-        }
-
-        @Test
-        @DisplayName("Save duplicate ID should throw exception")
-        void testSaveDuplicateIdThrowsException() {
-            Trainee trainee1 = new Trainee();
-            trainee1.setId(1L);
-            dao.save(trainee1);
-
-            Trainee trainee2 = new Trainee();
-            trainee2.setId(1L);
-            assertThrows(IllegalArgumentException.class, () -> dao.save(trainee2));
-        }
-
-        @Test
-        @DisplayName("FindById for non-existent ID should return empty optional")
-        void testFindByIdNotFoundReturnsEmptyOptional() {
-            assertTrue(dao.findById(999L).isEmpty());
-        }
-
-        @Test
-        @DisplayName("Update non-existent trainee should throw exception")
-        void testUpdateNonExistentTraineeThrowsException() {
-            Trainee trainee = new Trainee();
-            trainee.setId(1L);
-            assertThrows(NoSuchElementException.class, () -> dao.update(trainee));
-        }
-
-        @Test
-        @DisplayName("Update null trainee should throw exception")
-        void testUpdateNullTraineeThrowsException() {
-            assertThrows(IllegalArgumentException.class, () -> dao.update(null));
-        }
-
-        @Test
-        @DisplayName("Update trainee with null ID should throw exception")
-        void testUpdateTraineeWithNullIdThrowsException() {
-            Trainee trainee = new Trainee();
-            trainee.setId(null);
-            assertThrows(IllegalArgumentException.class, () -> dao.update(trainee));
-        }
-
-        @Test
-        @DisplayName("Delete non-existent ID should not throw exception")
-        void testDeleteNonExistentIdDoesNotThrow() {
-            assertDoesNotThrow(() -> dao.delete(999L));
-        }
-
-        @Test
-        @DisplayName("FindAll on empty DAO should return empty list")
-        void testFindAllEmptyReturnsEmptyList() {
-            assertTrue(dao.findAll().isEmpty());
-        }
+        assertNotNull(saved.getId());
+        assertTrue(dao.findById(saved.getId()).isPresent());
     }
+
+    @Test
+    @DisplayName("Save with existing ID should update trainee")
+    void testSaveUpdatesExisting() {
+        Trainee saved = dao.save(trainee);
+
+        saved.setAddress("New Address");
+        dao.save(saved);
+
+        Optional<Trainee> updated = dao.findById(saved.getId());
+        assertTrue(updated.isPresent());
+        assertEquals("New Address", updated.get().getAddress());
+    }
+
+
+    @Test
+    @DisplayName("FindAll should return all trainees")
+    void testFindAll() {
+        Trainee t1 = dao.save(trainee);
+
+        Trainee t2 = new Trainee();
+        t2.setDateOfBirth(LocalDate.of(1992, 2, 2));
+        t2.setAddress("456 Elm St");
+        t2.setUser(user);
+
+        dao.save(t2);
+
+        List<Trainee> all = dao.findAll();
+        assertEquals(2, all.size());
+    }
+
+    @Test
+    @DisplayName("Delete should remove trainee")
+    void testDelete() {
+        Trainee saved = dao.save(trainee);
+
+        dao.delete(saved.getId());
+
+        assertTrue(dao.findById(saved.getId()).isEmpty());
+        assertTrue(dao.findAll().isEmpty());
+    }
+
+    @Test
+    @DisplayName("Save null trainee should throw exception")
+    void testSaveNullThrows() {
+        assertThrows(IllegalArgumentException.class, () -> dao.save(null));
+    }
+
+    @Test
+    @DisplayName("FindById for non-existent ID should return empty")
+    void testFindByIdNotFound() {
+        assertTrue(dao.findById(999L).isEmpty());
+    }
+
+    @Test
+    @DisplayName("Delete non-existent ID should not throw")
+    void testDeleteNonExistent() {
+        assertDoesNotThrow(() -> dao.delete(999L));
+    }
+
+    @Test
+    @DisplayName("FindAll on empty DAO should return empty list")
+    void testFindAllEmpty() {
+        assertTrue(dao.findAll().isEmpty());
+    }
+}
 

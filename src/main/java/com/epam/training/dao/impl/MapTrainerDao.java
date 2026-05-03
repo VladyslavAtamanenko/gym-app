@@ -10,15 +10,28 @@ import java.util.*;
 @Repository
 public class MapTrainerDao implements TrainerDao {
 
+    private static long currentId = 1;
+
     @Autowired
     Map<Long, Trainer> storage;
 
     @Override
-    public void save(Trainer trainer) {
+    public Trainer save(Trainer trainer) {
         if (trainer == null) throw new IllegalArgumentException("Trainer is null");
-        if (trainer.getId() == null) throw new IllegalArgumentException("ID is null");
-        if (storage.containsKey(trainer.getId())) throw new IllegalArgumentException("Duplicate ID");
-        storage.put(trainer.getId(), trainer);
+
+        Long trainerId;
+
+        if (trainer.getId() == null) {
+            trainerId = currentId++;
+            trainer.setId(trainerId);
+        }
+        else {
+            trainerId = trainer.getId();
+        }
+
+        storage.put(trainerId, trainer);
+
+        return storage.get(trainerId);
     }
 
     @Override
@@ -30,13 +43,4 @@ public class MapTrainerDao implements TrainerDao {
     public List<Trainer> findAll() {
         return new ArrayList<>(storage.values());
     }
-
-    @Override
-    public void update(Trainer trainer) {
-        if (trainer == null) throw new IllegalArgumentException("Trainer is null");
-        if (trainer.getId() == null) throw new IllegalArgumentException("ID is null");
-        if (!storage.containsKey(trainer.getId())) throw new NoSuchElementException("Trainer not found");
-        storage.put(trainer.getId(), trainer);
-    }
-
 }

@@ -10,15 +10,29 @@ import java.util.*;
 @Repository
 public class MapTrainingDao implements TrainingDao {
 
+    private static long currentId = 1;
+
     @Autowired
     Map<Long, Training> storage;
 
     @Override
-    public void save(Training training) {
+    public Training save(Training training) {
+
         if (training == null) throw new IllegalArgumentException("Training is null");
-        if (training.getId() == null) throw new IllegalArgumentException("ID is null");
-        if (storage.containsKey(training.getId())) throw new IllegalArgumentException("Duplicate ID");
-        storage.put(training.getId(), training);
+
+        Long trainingId;
+
+        if (training.getId() == null) {
+            trainingId = currentId++;
+            training.setId(trainingId);
+        }
+        else {
+            trainingId = training.getId();
+        }
+
+        storage.put(trainingId, training);
+
+        return storage.get(trainingId);
     }
 
     @Override

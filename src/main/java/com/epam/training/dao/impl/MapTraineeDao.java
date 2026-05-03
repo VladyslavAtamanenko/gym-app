@@ -10,15 +10,29 @@ import java.util.*;
 @Repository
 public class MapTraineeDao implements TraineeDao {
 
+    private static long currentId = 1;
+
     @Autowired
     Map<Long, Trainee> storage;
 
     @Override
-    public void save(Trainee trainee) {
+    public Trainee save(Trainee trainee) {
+
         if (trainee == null) throw new IllegalArgumentException("Trainee is null");
-        if (trainee.getId() == null) throw new IllegalArgumentException("ID is null");
-        if (storage.containsKey(trainee.getId())) throw new IllegalArgumentException("Duplicate ID");
-        storage.put(trainee.getId(), trainee);
+
+        Long traineeId;
+
+        if (trainee.getId() == null) {
+            traineeId = currentId++;
+            trainee.setId(traineeId);
+        }
+        else {
+            traineeId = trainee.getId();
+        }
+
+        storage.put(traineeId, trainee);
+
+        return storage.get(traineeId);
     }
 
     @Override
@@ -29,14 +43,6 @@ public class MapTraineeDao implements TraineeDao {
     @Override
     public List<Trainee> findAll() {
         return new ArrayList<>(storage.values());
-    }
-
-    @Override
-    public void update(Trainee trainee) {
-        if (trainee == null) throw new IllegalArgumentException("Trainee is null");
-        if (trainee.getId() == null) throw new IllegalArgumentException("ID is null");
-        if (!storage.containsKey(trainee.getId())) throw new NoSuchElementException("Trainee not found");
-        storage.put(trainee.getId(), trainee);
     }
 
     @Override

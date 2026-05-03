@@ -7,11 +7,10 @@ import java.util.Optional;
 
 public interface TrainerDao {
 
-    void save(Trainer trainer);
+    Trainer save(Trainer trainer);
 
     Optional<Trainer> findById(Long id);
 
     List<Trainer> findAll();
 
-    void update(Trainer trainer);
 }
