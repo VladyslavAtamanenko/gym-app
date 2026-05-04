@@ -60,6 +60,25 @@ public class MapTrainingDao implements TrainingDao {
         return new ArrayList<>(storage.values());
     }
 
+    @Override
+    public List<Training> findAllByTrainee(Long traineeId) {
+        List<Training> trainings = storage.values().stream()
+                .filter(training -> Objects.equals(training.getTrainee().getId(), traineeId))
+                .toList();
+        LOGGER.debug("Retrieving all trainings by trainee. traineeId=" + traineeId + "count=" + trainings.size());
+        return trainings;
+    }
+
+    @Override
+    public void delete(Long id) {
+        Training removed = storage.remove(id);
+        if (removed == null) {
+            LOGGER.warn("Delete requested for missing training. trainingId=" + id);
+        } else {
+            LOGGER.info("Deleted training. trainingId=" + id + ", storageSize=" + storage.size());
+        }
+    }
+
     private Long getNextId() {
         return storage.keySet().stream()
                 .mapToLong(Long::longValue)

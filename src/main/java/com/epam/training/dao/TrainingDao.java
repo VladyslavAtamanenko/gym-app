@@ -12,4 +12,8 @@ public interface TrainingDao {
     Optional<Training> findById(Long id);
 
     List<Training> findAll();
+
+    List<Training> findAllByTrainee(Long traineeId);
+
+    void delete(Long id);
 }

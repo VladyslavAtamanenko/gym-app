@@ -116,6 +116,17 @@ class TrainingDaoTest {
     }
 
     @Test
+    @DisplayName("Delete should remove trainee")
+    void testDelete() {
+        Training saved = dao.save(training);
+
+        dao.delete(saved.getId());
+
+        assertTrue(dao.findById(saved.getId()).isEmpty());
+        assertEquals(SEEDED_RECORDS_COUNT, dao.findAll().size());
+    }
+
+    @Test
     @DisplayName("Save null training should throw exception")
     void testSaveNullThrows() {
         assertThrows(IllegalArgumentException.class, () -> dao.save(null));
@@ -125,6 +136,12 @@ class TrainingDaoTest {
     @DisplayName("FindById for non-existent ID should return empty")
     void testFindByIdNotFound() {
         assertTrue(dao.findById(999L).isEmpty());
+    }
+
+    @Test
+    @DisplayName("Delete non-existent ID should not throw")
+    void testDeleteNonExistent() {
+        assertDoesNotThrow(() -> dao.delete(999L));
     }
 
     @Test

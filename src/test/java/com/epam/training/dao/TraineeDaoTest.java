@@ -1,9 +1,7 @@
 package com.epam.training.dao;
 
 import com.epam.training.config.AppConfig;
-import com.epam.training.config.StorageConfig;
-import com.epam.training.model.Trainee;
-import com.epam.training.model.User;
+import com.epam.training.model.*;
 import org.junit.jupiter.api.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.annotation.DirtiesContext;
@@ -24,6 +22,8 @@ class TraineeDaoTest {
 
     @Autowired
     private TraineeDao dao;
+    @Autowired
+    private TrainingDao trainingDao;
 
     private Trainee trainee;
     private User user;
@@ -91,6 +91,38 @@ class TraineeDaoTest {
 
         assertTrue(dao.findById(saved.getId()).isEmpty());
         assertEquals(SEEDED_RECORDS_COUNT, dao.findAll().size());
+    }
+
+    @Test
+    @DisplayName("Delete should cascade remove trainings linked to trainee")
+    void testDeleteCascadeRemovesTrainings() {
+        Trainee saved = dao.save(trainee);
+
+        Trainer trainer = new Trainer();
+        trainer.setId(100L); // minimal setup
+        trainer.setSpecialization(new TrainingType(1L, "Fitness"));
+
+        Training t1 = new Training();
+        t1.setId(1000L);
+        t1.setTrainee(saved);
+        t1.setTrainer(trainer);
+
+        Training t2 = new Training();
+        t2.setId(1001L);
+        t2.setTrainee(saved);
+        t2.setTrainer(trainer);
+
+        trainingDao.save(t1);
+        trainingDao.save(t2);
+
+        assertEquals(2, trainingDao.findAllByTrainee(saved.getId()).size());
+
+        dao.delete(saved.getId());
+
+        assertTrue(dao.findById(saved.getId()).isEmpty());
+
+        List<Training> remaining = trainingDao.findAllByTrainee(saved.getId());
+        assertTrue(remaining.isEmpty(), "Trainings should be cascade deleted");
     }
 
     @Test

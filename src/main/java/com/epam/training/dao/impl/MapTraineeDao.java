@@ -1,7 +1,9 @@
 package com.epam.training.dao.impl;
 
 import com.epam.training.dao.TraineeDao;
+import com.epam.training.dao.TrainingDao;
 import com.epam.training.model.Trainee;
+import com.epam.training.model.Training;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,6 +18,8 @@ public class MapTraineeDao implements TraineeDao {
 
     @Autowired
     Map<Long, Trainee> storage;
+
+    TrainingDao trainingDao;
 
     @Override
     public Trainee save(Trainee trainee) {
@@ -63,11 +67,27 @@ public class MapTraineeDao implements TraineeDao {
     @Override
     public void delete(Long id) {
         Trainee removed = storage.remove(id);
+
         if (removed == null) {
             LOGGER.warn("Delete requested for missing trainee. traineeId=" + id);
-        } else {
-            LOGGER.info("Deleted trainee. traineeId=" + id + ", storageSize=" + storage.size());
+            return;
         }
+
+        List<Training> trainings = trainingDao.findAllByTrainee(id);
+
+        if (!trainings.isEmpty()) {
+            LOGGER.info("Cascade deleting trainings for trainee. traineeId=" + id +
+                    ", trainingsCount=" + trainings.size());
+
+            for (Training training : trainings) {
+                trainingDao.delete(training.getId());
+            }
+        } else {
+            LOGGER.debug("No trainings found for cascade delete. traineeId=" + id);
+        }
+
+        LOGGER.info("Deleted trainee. traineeId=" + id +
+                ", storageSize=" + storage.size());
     }
 
     private Long getNextId() {
@@ -75,5 +95,10 @@ public class MapTraineeDao implements TraineeDao {
                 .mapToLong(Long::longValue)
                 .max()
                 .orElse(0L) + 1;
+    }
+
+    @Autowired
+    public void setTrainingDao(TrainingDao trainingDao) {
+        this.trainingDao = trainingDao;
     }
 }
