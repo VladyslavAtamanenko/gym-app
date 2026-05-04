@@ -119,27 +119,45 @@ class TrainingServiceTest {
     @Test
     @DisplayName("create: non-existent trainee ID should throw NoSuchElementException")
     void create_traineeNotFound_throws() {
+        when(trainerDao.findById(2L)).thenReturn(Optional.of(trainer));
         when(traineeDao.findById(1L)).thenReturn(Optional.empty());
 
         assertThrows(NoSuchElementException.class, () -> service.create(createRequest));
 
+        verify(trainerDao).findById(2L);
         verify(traineeDao).findById(1L);
-        verifyNoInteractions(trainerDao, trainingCreateRequestMapper, trainingDao, trainingMapper);
+
+        verifyNoInteractions(trainingCreateRequestMapper, trainingDao, trainingMapper);
     }
 
     @Test
     @DisplayName("create: non-existent trainer ID should throw NoSuchElementException")
     void create_trainerNotFound_throws() {
-        when(traineeDao.findById(1L)).thenReturn(Optional.of(trainee));
         when(trainerDao.findById(2L)).thenReturn(Optional.empty());
 
         assertThrows(NoSuchElementException.class, () -> service.create(createRequest));
 
-        verify(traineeDao).findById(1L);
         verify(trainerDao).findById(2L);
-        verifyNoInteractions(trainingCreateRequestMapper, trainingDao, trainingMapper);
+
+        verifyNoInteractions(traineeDao, trainingCreateRequestMapper, trainingDao, trainingMapper);
     }
 
+    @Test
+    @DisplayName("create: trainer specialization mismatch should throw IllegalArgumentException")
+    void create_specializationMismatch_throws() {
+        TrainingType YOGA = new TrainingType(2L, "Yoga"); // different from FITNESS
+
+        createRequest.setType(YOGA); // mismatch
+
+        when(trainerDao.findById(2L)).thenReturn(Optional.of(trainer));
+
+        assertThrows(IllegalArgumentException.class, () -> service.create(createRequest));
+
+        verify(trainerDao).findById(2L);
+        verify(traineeDao, never()).findById(any());
+
+        verifyNoInteractions(trainingCreateRequestMapper, trainingDao, trainingMapper);
+    }
 
     @Test
     @DisplayName("findById: existing ID should return mapped DTO wrapped in Optional")

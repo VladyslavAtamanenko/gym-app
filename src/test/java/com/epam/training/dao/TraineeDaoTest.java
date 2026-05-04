@@ -16,7 +16,7 @@ import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-@SpringJUnitConfig({AppConfig.class, StorageConfig.class})
+@SpringJUnitConfig(AppConfig.class)
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 class TraineeDaoTest {
 

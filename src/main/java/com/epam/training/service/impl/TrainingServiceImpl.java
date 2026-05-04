@@ -18,6 +18,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -50,17 +51,23 @@ public class TrainingServiceImpl implements TrainingService {
         Long trainerId = training.getTrainerId();
         LOGGER.debug("Creating training. traineeId=" + traineeId + ", trainerId=" + trainerId);
 
-        Trainee trainee = traineeDao
-                .findById(traineeId)
-                .orElseThrow(() -> {
-                    LOGGER.warn("Training creation failed because trainee was not found. traineeId=" + traineeId);
-                    return new NoSuchElementException();
-                });
-
         Trainer trainer = trainerDao
                 .findById(trainerId)
                 .orElseThrow(() -> {
                     LOGGER.warn("Training creation failed because trainer was not found. trainerId=" + trainerId);
+                    return new NoSuchElementException();
+                });
+
+        if (!Objects.equals(trainer.getSpecialization(), training.getType())){
+            LOGGER.warn("Training creation failed because trainer specialization doesn't match training type. " +
+                    "trainerSpecialization=" + trainer.getSpecialization() + " trainingType=" + training.getType());
+            throw new IllegalArgumentException();
+        }
+
+        Trainee trainee = traineeDao
+                .findById(traineeId)
+                .orElseThrow(() -> {
+                    LOGGER.warn("Training creation failed because trainee was not found. traineeId=" + traineeId);
                     return new NoSuchElementException();
                 });
 
