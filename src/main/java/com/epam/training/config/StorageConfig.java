@@ -12,7 +12,7 @@ import java.util.Map;
 
 
 @Configuration
-@Import({PropertyConfig.class, StorageInitializer.class})
+@Import(PropertyConfig.class)
 public class StorageConfig {
 
     @Bean
