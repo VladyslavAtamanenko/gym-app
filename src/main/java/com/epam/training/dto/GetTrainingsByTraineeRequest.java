@@ -4,17 +4,16 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.time.Duration;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class TrainingCreateRequest {
-    private String trainee;
+public class GetTrainingsByTraineeRequest {
+    private String username;
+    private LocalDateTime from;
+    private LocalDateTime to;
     private String trainer;
-    private String name;
-    private String type;
-    private LocalDateTime date;
-    private Duration duration;
+    private String trainingType;
 }

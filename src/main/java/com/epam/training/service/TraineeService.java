@@ -1,8 +1,6 @@
 package com.epam.training.service;
 
-import com.epam.training.dto.TraineeCreateRequest;
-import com.epam.training.dto.TraineeCreateResponse;
-import com.epam.training.dto.TraineeDTO;
+import com.epam.training.dto.*;
 
 import java.util.List;
 import java.util.Optional;
@@ -11,12 +9,18 @@ public interface TraineeService {
 
     TraineeCreateResponse create(TraineeCreateRequest trainee);
 
-    TraineeDTO update(TraineeDTO trainee);
+    Boolean credentialsMatch(LoginRequest credentials);
 
-    void delete(Long id);
+    Boolean changePassword(ChangeLoginRequest request);
 
-    Optional<TraineeDTO> findById(Long id);
+    TraineeUpdateResponse update(TraineeUpdateRequest trainee);
 
-    List<TraineeDTO> findAll();
+    List<TrainerDTO> updateTrainersList(TraineeUpdateTrainersRequest request);
+
+    void delete(String username);
+
+    Optional<TraineeGetResponse> findByUsername(String username);
+
+    List<TraineeGetResponse> findAll();
 }
 

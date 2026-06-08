@@ -38,7 +38,7 @@ class TrainingDaoTest {
         User user = new User();
         user.setFirstName("John");
         user.setLastName("Doe");
-        user.setUserName("jdoe");
+        user.setUsername("jdoe");
         user.setPassword("pass");
         user.setIsActive(true);
 

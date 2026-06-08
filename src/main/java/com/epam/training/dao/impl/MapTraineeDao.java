@@ -59,13 +59,18 @@ public class MapTraineeDao implements TraineeDao {
     }
 
     @Override
+    public Optional<Trainee> findByUsername(String username) {
+        return Optional.empty();
+    }
+
+    @Override
     public List<Trainee> findAll() {
         LOGGER.debug("Retrieving all trainees. count=" + storage.size());
         return new ArrayList<>(storage.values());
     }
 
     @Override
-    public void delete(Long id) {
+    public void delete(String username) {
         Trainee removed = storage.remove(id);
 
         if (removed == null) {
@@ -73,7 +78,7 @@ public class MapTraineeDao implements TraineeDao {
             return;
         }
 
-        List<Training> trainings = trainingDao.findAllByTrainee(id);
+        List<Training> trainings = trainingDao.findByTrainee(id);
 
         if (!trainings.isEmpty()) {
             LOGGER.info("Cascade deleting trainings for trainee. traineeId=" + id +

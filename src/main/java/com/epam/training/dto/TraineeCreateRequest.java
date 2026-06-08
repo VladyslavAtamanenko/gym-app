@@ -10,7 +10,9 @@ import java.time.LocalDate;
 @NoArgsConstructor
 @AllArgsConstructor
 public class TraineeCreateRequest {
+    private String firstName;
+    private String lastName;
     private LocalDate dateOfBirth;
     private String address;
-    private UserCreateRequest user;
+
 }

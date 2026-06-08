@@ -62,7 +62,7 @@ class TrainingServiceTest {
         user.setId(1L);
         user.setFirstName("John");
         user.setLastName("Doe");
-        user.setUserName("John.Doe");
+        user.setUsername("John.Doe");
         user.setIsActive(true);
 
         trainee = new Trainee();

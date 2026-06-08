@@ -11,7 +11,7 @@ import java.time.LocalDateTime;
 import static org.junit.jupiter.api.Assertions.*;
 
 class TrainingMapperTest {
-    private final TrainingMapper mapper = new TrainingMapper();
+    private final TraineeGetTrainingsResponseMapper mapper = new TraineeGetTrainingsResponseMapper();
 
     private static final TrainingType FITNESS = new TrainingType(1L, "Fitness");
 

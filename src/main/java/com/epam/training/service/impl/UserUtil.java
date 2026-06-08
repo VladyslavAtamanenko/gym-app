@@ -44,7 +44,7 @@ public class UserUtil {
                 existingUsernames
         );
 
-        user.setUserName(username);
+        user.setUsername(username);
         user.setPassword(passwordGenerator.generate());
         user.setIsActive(true);
         LOGGER.info("User initialized for new profile. userId=" + user.getId());
@@ -71,11 +71,11 @@ public class UserUtil {
                     newUser.getLastName(),
                     existingUsernames
             );
-            updated.setUserName(username);
+            updated.setUsername(username);
         } else{
             updated.setFirstName(oldUser.getFirstName());
             updated.setLastName(oldUser.getLastName());
-            updated.setUserName(oldUser.getUserName());
+            updated.setUsername(oldUser.getUsername());
         }
         updated.setPassword(oldUser.getPassword());
         updated.setIsActive(newUser.getIsActive());
@@ -88,14 +88,14 @@ public class UserUtil {
        Set<String> existingUsernames = traineeDao.findAll()
                 .stream()
                 .filter(t -> t.getUser() != null)
-                .map(t -> t.getUser().getUserName())
+                .map(t -> t.getUser().getUsername())
                 .filter(Objects::nonNull)
                 .collect(Collectors.toSet());
 
         existingUsernames.addAll(trainerDao.findAll()
                 .stream()
                 .filter(t -> t.getUser() != null)
-                .map(t -> t.getUser().getUserName())
+                .map(t -> t.getUser().getUsername())
                 .filter(Objects::nonNull)
                 .collect(Collectors.toSet()));
 

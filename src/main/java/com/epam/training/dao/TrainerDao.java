@@ -9,8 +9,9 @@ public interface TrainerDao {
 
     Trainer save(Trainer trainer);
 
-    Optional<Trainer> findById(Long id);
-
     List<Trainer> findAll();
 
+    Optional<Trainer> findByUsername(String username);
+
+    List<Trainer> findNotAssignedOnTrainee(String traineeUsername);
 }

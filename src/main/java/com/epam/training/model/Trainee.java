@@ -19,7 +19,7 @@ public class Trainee{
     private Long id;
     private LocalDate dateOfBirth;
     private String address;
-    @OneToOne(fetch = FetchType.LAZY)
+    @OneToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
     @JoinColumn(name = "user_id")
     private User user;
 

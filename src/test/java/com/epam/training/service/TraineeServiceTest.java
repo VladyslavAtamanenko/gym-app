@@ -58,7 +58,7 @@ class TraineeServiceTest {
         user.setId(1L);
         user.setFirstName("John");
         user.setLastName("Doe");
-        user.setUserName("John.Doe");
+        user.setUsername("John.Doe");
         user.setPassword("pass123456");
         user.setIsActive(true);
 
@@ -114,7 +114,7 @@ class TraineeServiceTest {
         updatedUser.setId(1L);
         updatedUser.setFirstName("Jane");
         updatedUser.setLastName("Doe");
-        updatedUser.setUserName("jane.doe");
+        updatedUser.setUsername("jane.doe");
         updatedUser.setIsActive(true);
 
         Trainee updates = new Trainee();

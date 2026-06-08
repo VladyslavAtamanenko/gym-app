@@ -45,7 +45,7 @@ class UserUtilTest {
         u.setId(id);
         u.setFirstName(first);
         u.setLastName(last);
-        u.setUserName(username);
+        u.setUsername(username);
         u.setPassword("oldpass123");
         u.setIsActive(true);
         return u;
@@ -76,7 +76,7 @@ class UserUtilTest {
         User user = makeUser(null, "John", "Doe", null);
         userUtil.initializeUser(user);
 
-        assertEquals("John.Doe", user.getUserName());
+        assertEquals("John.Doe", user.getUsername());
         assertEquals("generatedP", user.getPassword());
         assertTrue(user.getIsActive());
     }

@@ -27,7 +27,7 @@ class UserCreateRequestMapperTest {
         User entity = mapper.toEntity(new UserCreateRequest("A", "B"));
 
         assertNull(entity.getId());
-        assertNull(entity.getUserName());
+        assertNull(entity.getUsername());
         assertNull(entity.getPassword());
         assertNull(entity.getIsActive());
     }

@@ -3,9 +3,8 @@ package com.epam.training.service.impl;
 import com.epam.training.dao.TraineeDao;
 import com.epam.training.dao.TrainerDao;
 import com.epam.training.dao.TrainingDao;
-import com.epam.training.dto.TrainingCreateRequest;
-import com.epam.training.dto.TrainingDTO;
-import com.epam.training.mapper.Mapper;
+import com.epam.training.dto.*;
+import com.epam.training.mapper.ToDTOMapper;
 import com.epam.training.mapper.ToEntityMapper;
 import com.epam.training.model.Trainee;
 import com.epam.training.model.Trainer;
@@ -19,7 +18,6 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -29,7 +27,8 @@ public class TrainingServiceImpl implements TrainingService {
 
     ToEntityMapper<TrainingCreateRequest, Training> trainingCreateRequestMapper;
 
-    Mapper<Training, TrainingDTO> trainingMapper;
+    ToDTOMapper<Training, GetTrainingsByTraineeResponse> byTraineeResponseMapper;
+    ToDTOMapper<Training, GetTrainingsByTrainerResponse> byTrainerResponseMapper;
 
     @Autowired
     private TrainingDao trainingDao;
@@ -41,33 +40,33 @@ public class TrainingServiceImpl implements TrainingService {
     private TrainerDao trainerDao;
 
     @Override
-    public TrainingDTO create(TrainingCreateRequest training) {
+    public Boolean create(TrainingCreateRequest training) {
         if (training == null) {
             LOGGER.warn("Rejected training creation request because request body is null");
             throw new IllegalArgumentException();
         }
 
-        Long traineeId = training.getTraineeId();
-        Long trainerId = training.getTrainerId();
-        LOGGER.debug("Creating training. traineeId=" + traineeId + ", trainerId=" + trainerId);
+        String traineeUsername = training.getTrainee();
+        String trainerUsername = training.getTrainer();
+        LOGGER.debug("Creating training. traineeUsername=" + traineeUsername + ", trainerUsername=" + trainerUsername);
 
         Trainer trainer = trainerDao
-                .findById(trainerId)
+                .findByUsername(trainerUsername)
                 .orElseThrow(() -> {
-                    LOGGER.warn("Training creation failed because trainer was not found. trainerId=" + trainerId);
+                    LOGGER.warn("Training creation failed because trainer was not found. trainerUsername=" + trainerUsername);
                     return new NoSuchElementException();
                 });
 
-        if (!Objects.equals(trainer.getSpecialization(), training.getType())){
+        if (!Objects.equals(trainer.getSpecialization().getName(), training.getType())){
             LOGGER.warn("Training creation failed because trainer specialization doesn't match training type. " +
-                    "trainerSpecialization=" + trainer.getSpecialization() + " trainingType=" + training.getType());
+                    "trainerSpecialization=" + trainer.getSpecialization().getName() + " trainingType=" + training.getType());
             throw new IllegalArgumentException();
         }
 
         Trainee trainee = traineeDao
-                .findById(traineeId)
+                .findByUsername(traineeUsername)
                 .orElseThrow(() -> {
-                    LOGGER.warn("Training creation failed because trainee was not found. traineeId=" + traineeId);
+                    LOGGER.warn("Training creation failed because trainee was not found. traineeUsername=" + traineeUsername);
                     return new NoSuchElementException();
                 });
 
@@ -78,24 +77,39 @@ public class TrainingServiceImpl implements TrainingService {
 
         Training saved = trainingDao.save(created);
         LOGGER.info("Training created successfully. trainingId=" + saved.getId()
-                + ", traineeId=" + traineeId + ", trainerId=" + trainerId);
-        return trainingMapper.toDTO(saved);
+                + ", traineeUsername=" + traineeUsername + ", trainerId=" + trainerUsername);
+        return true;
     }
 
+
     @Override
-    public Optional<TrainingDTO> findById(Long id) {
-        Optional<TrainingDTO> result = trainingDao.findById(id).map(trainingMapper::toDTO);
-        LOGGER.debug("Training lookup completed. trainingId=" + id + ", found=" + result.isPresent());
+    public List<GetTrainingsByTraineeResponse> findByTrainee(GetTrainingsByTraineeRequest request) {
+        List<GetTrainingsByTraineeResponse> result = trainingDao.findByTrainee(request.getUsername(),
+                        request.getTrainingType(),
+                        request.getFrom(),
+                        request.getTo(),
+                        request.getTrainer())
+                .stream()
+                .map(byTraineeResponseMapper::toDTO)
+                .collect(Collectors.toList());
+        LOGGER.debug("Training list according to request traineeUsername=" + request.getUsername() +
+                "trainingType=" +  request.getTrainingType() + " dateFrom=" + request.getFrom() +
+                " dateTo=" + request.getTo() + "trainerUsername=" + request.getTrainer() + " retrieved. count=" + result.size());
         return result;
     }
 
     @Override
-    public List<TrainingDTO> findAll() {
-        List<TrainingDTO> result = trainingDao.findAll()
+    public List<GetTrainingsByTrainerResponse> findByTrainer(GetTrainingsByTrainerRequest request) {
+        List<GetTrainingsByTrainerResponse> result = trainingDao.findByTrainer(request.getUsername(),
+                        request.getFrom(),
+                        request.getTo(),
+                        request.getTrainee())
                 .stream()
-                .map(trainingMapper::toDTO)
+                .map(byTrainerResponseMapper::toDTO)
                 .collect(Collectors.toList());
-        LOGGER.debug("Training list retrieved. count=" + result.size());
+        LOGGER.debug("Training list according to request trainerUsername=" + request.getUsername() +
+                " dateFrom=" + request.getFrom() +
+                " dateTo=" + request.getTo() + "trainerUsername=" + request.getTrainee() + " retrieved. count=" + result.size());
         return result;
     }
 
@@ -105,7 +119,12 @@ public class TrainingServiceImpl implements TrainingService {
     }
 
     @Autowired
-    public void setTrainingMapper(Mapper<Training, TrainingDTO> trainingMapper) {
-        this.trainingMapper = trainingMapper;
+    public void setByTraineeResponseMapper(ToDTOMapper<Training, GetTrainingsByTraineeResponse> byTraineeResponseMapper) {
+        this.byTraineeResponseMapper = byTraineeResponseMapper;
+    }
+
+    @Autowired
+    public void setByTrainerResponseMapper(ToDTOMapper<Training, GetTrainingsByTrainerResponse> byTrainerResponseMapper) {
+        this.byTrainerResponseMapper = byTrainerResponseMapper;
     }
 }

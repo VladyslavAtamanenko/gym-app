@@ -32,7 +32,7 @@ class TraineeMapperTest {
         assertEquals(5L,                       dto.getId());
         assertEquals(LocalDate.of(1988, 7, 4), dto.getDateOfBirth());
         assertEquals("10 Elm St",              dto.getAddress());
-        assertEquals("Sue.Gray",               dto.getUser().getUserName());
+        assertEquals("Sue.Gray",               dto.getUser().getUsername());
     }
 
     @Test
@@ -46,7 +46,7 @@ class TraineeMapperTest {
         assertEquals(5L,                       entity.getId());
         assertEquals(LocalDate.of(1988, 7, 4), entity.getDateOfBirth());
         assertEquals("10 Elm St",              entity.getAddress());
-        assertEquals("Sue.Gray",               entity.getUser().getUserName());
+        assertEquals("Sue.Gray",               entity.getUser().getUsername());
     }
 
     @Test
@@ -61,6 +61,6 @@ class TraineeMapperTest {
         assertEquals(origin.getAddress(),     rebuilt.getAddress());
         assertEquals(origin.getDateOfBirth(), rebuilt.getDateOfBirth());
         assertEquals(origin.getUser().getId(),       rebuilt.getUser().getId());
-        assertEquals(origin.getUser().getUserName(), rebuilt.getUser().getUserName());
+        assertEquals(origin.getUser().getUsername(), rebuilt.getUser().getUsername());
     }
 }

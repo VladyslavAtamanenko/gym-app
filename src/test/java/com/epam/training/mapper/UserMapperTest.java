@@ -20,7 +20,7 @@ class UserMapperTest {
         assertEquals(1L,            dto.getId());
         assertEquals("Alice",       dto.getFirstName());
         assertEquals("Brown",       dto.getLastName());
-        assertEquals("Alice.Brown", dto.getUserName());
+        assertEquals("Alice.Brown", dto.getUsername());
         assertTrue(dto.getIsActive());
     }
 
@@ -34,7 +34,7 @@ class UserMapperTest {
         assertEquals(2L,          entity.getId());
         assertEquals("Bob",       entity.getFirstName());
         assertEquals("Green",     entity.getLastName());
-        assertEquals("Bob.Green", entity.getUserName());
+        assertEquals("Bob.Green", entity.getUsername());
         assertFalse(entity.getIsActive());
         assertNull(entity.getPassword()); // UserDTO carries no password
     }
@@ -50,7 +50,7 @@ class UserMapperTest {
         assertEquals(original.getId(),        rebuilt.getId());
         assertEquals(original.getFirstName(), rebuilt.getFirstName());
         assertEquals(original.getLastName(),  rebuilt.getLastName());
-        assertEquals(original.getUserName(),  rebuilt.getUserName());
+        assertEquals(original.getUsername(),  rebuilt.getUsername());
         assertEquals(original.getIsActive(),  rebuilt.getIsActive());
     }
 }

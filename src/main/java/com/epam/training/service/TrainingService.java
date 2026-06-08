@@ -1,18 +1,14 @@
 package com.epam.training.service;
 
-import com.epam.training.dto.TraineeDTO;
-import com.epam.training.dto.TrainingCreateRequest;
-import com.epam.training.dto.TrainingDTO;
-import com.epam.training.model.Training;
+import com.epam.training.dto.*;
 
 import java.util.List;
-import java.util.Optional;
 
 public interface TrainingService {
-    TrainingDTO create(TrainingCreateRequest training);
 
+    Boolean create(TrainingCreateRequest training);
 
-    Optional<TrainingDTO> findById(Long id);
+    List<GetTrainingsByTraineeResponse> findByTrainee(GetTrainingsByTraineeRequest request);
 
-    List<TrainingDTO> findAll();
+    List<GetTrainingsByTrainerResponse> findByTrainer(GetTrainingsByTrainerRequest request);
 }

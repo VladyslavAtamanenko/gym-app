@@ -31,7 +31,7 @@ class TraineeCreateResponseMapperTest {
         assertEquals(10L,                        dto.getId());
         assertEquals(LocalDate.of(1995, 3, 15), dto.getDateOfBirth());
         assertEquals("42 Baker St",              dto.getAddress());
-        assertEquals("Tom.Ford",                 dto.getUser().getUserName());
+        assertEquals("Tom.Ford",                 dto.getUser().getUsername());
         assertEquals("pw",                       dto.getUser().getPassword());
     }
 }

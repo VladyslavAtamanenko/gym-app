@@ -30,7 +30,7 @@ class TrainerCreateResponseMapperTest {
 
         assertEquals(7L,          dto.getId());
         assertEquals(yoga,        dto.getSpecialization());
-        assertEquals("Mike.Ross", dto.getUser().getUserName());
+        assertEquals("Mike.Ross", dto.getUser().getUsername());
         assertEquals("secret",    dto.getUser().getPassword());
     }
 }

@@ -10,11 +10,10 @@ import java.time.LocalDateTime;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class TrainingCreateRequest {
-    private String trainee;
-    private String trainer;
+public class GetTrainingsByTrainerResponse {
     private String name;
     private String type;
     private LocalDateTime date;
     private Duration duration;
+    private String trainee;
 }

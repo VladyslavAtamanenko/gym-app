@@ -32,7 +32,7 @@ class TrainerMapperTest {
 
         assertEquals(3L,       dto.getId());
         assertEquals(FITNESS,  dto.getSpecialization());
-        assertEquals("Lee.Chan", dto.getUser().getUserName());
+        assertEquals("Lee.Chan", dto.getUser().getUsername());
     }
 
     @Test
@@ -45,7 +45,7 @@ class TrainerMapperTest {
 
         assertEquals(3L,      entity.getId());
         assertEquals(FITNESS, entity.getSpecialization());
-        assertEquals("Lee.Chan", entity.getUser().getUserName());
+        assertEquals("Lee.Chan", entity.getUser().getUsername());
     }
 
     @Test
@@ -58,6 +58,6 @@ class TrainerMapperTest {
 
         assertEquals(origin.getId(),                   rebuilt.getId());
         assertEquals(origin.getSpecialization(),       rebuilt.getSpecialization());
-        assertEquals(origin.getUser().getUserName(),   rebuilt.getUser().getUserName());
+        assertEquals(origin.getUser().getUsername(),   rebuilt.getUser().getUsername());
     }
 }

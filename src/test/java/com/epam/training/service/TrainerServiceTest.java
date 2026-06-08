@@ -61,7 +61,7 @@ class TrainerServiceTest {
         user.setId(1L);
         user.setFirstName("Alice");
         user.setLastName("Smith");
-        user.setUserName("Alice.Smith");
+        user.setUsername("Alice.Smith");
         user.setPassword("password1234");
         user.setIsActive(true);
 
@@ -116,7 +116,7 @@ class TrainerServiceTest {
         updatedUser.setId(1L);
         updatedUser.setFirstName("Alice");
         updatedUser.setLastName("Smith");
-        updatedUser.setUserName("Alice.Smith");
+        updatedUser.setUsername("Alice.Smith");
         updatedUser.setIsActive(false);
 
         Trainer updates = new Trainer();

@@ -1,10 +1,11 @@
 package com.epam.training.dao;
 
 import com.epam.training.config.AppConfig;
+import com.epam.training.config.PersistenceConfig;
 import com.epam.training.model.*;
+import jakarta.transaction.Transactional;
 import org.junit.jupiter.api.*;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 
 
@@ -14,26 +15,22 @@ import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-@SpringJUnitConfig(AppConfig.class)
-@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
+@SpringJUnitConfig({AppConfig.class, PersistenceConfig.class})
+@Transactional
 class TraineeDaoTest {
-
-    private static final int SEEDED_RECORDS_COUNT = 10;
 
     @Autowired
     private TraineeDao dao;
-    @Autowired
-    private TrainingDao trainingDao;
 
     private Trainee trainee;
-    private User user;
 
     @BeforeEach
     void setUp() {
-        user = new User();
+
+        User user = new User();
         user.setFirstName("John");
         user.setLastName("Doe");
-        user.setUserName("jdoe");
+        user.setUsername("jdoe");
         user.setPassword("pass");
         user.setIsActive(true);
 
@@ -44,109 +41,116 @@ class TraineeDaoTest {
     }
 
     @Test
-    @DisplayName("Save with null ID should generate ID and persist")
-    void testSaveGeneratesId() {
+    @DisplayName("Save should persist trainee")
+    void testSave() {
+
         Trainee saved = dao.save(trainee);
 
         assertNotNull(saved.getId());
-        assertTrue(dao.findById(saved.getId()).isPresent());
+
+        Optional<Trainee> found =
+                dao.findByUsername("jdoe");
+
+        assertTrue(found.isPresent());
+        assertEquals(saved.getId(), found.get().getId());
     }
 
     @Test
-    @DisplayName("Save with existing ID should update trainee")
-    void testSaveUpdatesExisting() {
-        Trainee saved = dao.save(trainee);
+    @DisplayName("Save existing trainee should update data")
+    void testUpdate() {
 
-        saved.setAddress("New Address");
-        dao.save(saved);
+        dao.save(trainee);
 
-        Optional<Trainee> updated = dao.findById(saved.getId());
-        assertTrue(updated.isPresent());
-        assertEquals("New Address", updated.get().getAddress());
+        trainee.setAddress("New Address");
+
+        dao.save(trainee);
+
+        Trainee updated = dao.findByUsername("jdoe")
+                .orElseThrow();
+
+        assertEquals("New Address",
+                updated.getAddress());
     }
 
+    @Test
+    @DisplayName("FindByUsername should return trainee")
+    void testFindByUsername() {
+
+        dao.save(trainee);
+
+        Optional<Trainee> result =
+                dao.findByUsername("jdoe");
+
+        assertTrue(result.isPresent());
+        assertEquals("John",
+                result.get().getUser().getFirstName());
+    }
 
     @Test
-    @DisplayName("FindAll should return all trainees")
+    @DisplayName("FindByUsername should return empty for unknown username")
+    void testFindByUsernameNotFound() {
+
+        assertTrue(
+                dao.findByUsername("unknown")
+                        .isEmpty()
+        );
+    }
+
+    @Test
+    @DisplayName("FindAll should return saved trainees")
     void testFindAll() {
-        Trainee t1 = dao.save(trainee);
 
-        Trainee t2 = new Trainee();
-        t2.setDateOfBirth(LocalDate.of(1992, 2, 2));
-        t2.setAddress("456 Elm St");
-        t2.setUser(user);
+        dao.save(trainee);
 
-        dao.save(t2);
+        User secondUser = new User();
+        secondUser.setFirstName("Jane");
+        secondUser.setLastName("Smith");
+        secondUser.setUsername("jsmith");
+        secondUser.setPassword("pass");
+        secondUser.setIsActive(true);
 
-        List<Trainee> all = dao.findAll();
-        assertEquals(SEEDED_RECORDS_COUNT + 2, all.size());
+        Trainee second = new Trainee();
+        second.setDateOfBirth(LocalDate.of(1992, 2, 2));
+        second.setAddress("456 Elm St");
+        second.setUser(secondUser);
+
+        dao.save(second);
+
+        List<Trainee> trainees = dao.findAll();
+
+        assertEquals(2, trainees.size());
     }
 
     @Test
     @DisplayName("Delete should remove trainee")
     void testDelete() {
-        Trainee saved = dao.save(trainee);
 
-        dao.delete(saved.getId());
+        dao.save(trainee);
 
-        assertTrue(dao.findById(saved.getId()).isEmpty());
-        assertEquals(SEEDED_RECORDS_COUNT, dao.findAll().size());
+        dao.delete("jdoe");
+
+        assertTrue(
+                dao.findByUsername("jdoe")
+                        .isEmpty()
+        );
     }
 
     @Test
-    @DisplayName("Delete should cascade remove trainings linked to trainee")
-    void testDeleteCascadeRemovesTrainings() {
-        Trainee saved = dao.save(trainee);
+    @DisplayName("Delete non-existing username should not throw")
+    void testDeleteNonExisting() {
 
-        Trainer trainer = new Trainer();
-        trainer.setId(100L); // minimal setup
-        trainer.setSpecialization(new TrainingType(1L, "Fitness"));
-
-        Training t1 = new Training();
-        t1.setId(1000L);
-        t1.setTrainee(saved);
-        t1.setTrainer(trainer);
-
-        Training t2 = new Training();
-        t2.setId(1001L);
-        t2.setTrainee(saved);
-        t2.setTrainer(trainer);
-
-        trainingDao.save(t1);
-        trainingDao.save(t2);
-
-        assertEquals(2, trainingDao.findAllByTrainee(saved.getId()).size());
-
-        dao.delete(saved.getId());
-
-        assertTrue(dao.findById(saved.getId()).isEmpty());
-
-        List<Training> remaining = trainingDao.findAllByTrainee(saved.getId());
-        assertTrue(remaining.isEmpty(), "Trainings should be cascade deleted");
+        assertDoesNotThrow(
+                () -> dao.delete("unknown")
+        );
     }
 
     @Test
     @DisplayName("Save null trainee should throw exception")
-    void testSaveNullThrows() {
-        assertThrows(IllegalArgumentException.class, () -> dao.save(null));
-    }
+    void testSaveNull() {
 
-    @Test
-    @DisplayName("FindById for non-existent ID should return empty")
-    void testFindByIdNotFound() {
-        assertTrue(dao.findById(999L).isEmpty());
-    }
-
-    @Test
-    @DisplayName("Delete non-existent ID should not throw")
-    void testDeleteNonExistent() {
-        assertDoesNotThrow(() -> dao.delete(999L));
-    }
-
-    @Test
-    @DisplayName("FindAll should return seeded trainees")
-    void testFindAllSeeded() {
-        assertEquals(SEEDED_RECORDS_COUNT, dao.findAll().size());
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> dao.save(null)
+        );
     }
 }
-

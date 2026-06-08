@@ -20,7 +20,7 @@ class UserCreateResponseMapperTest {
         assertEquals(1L,           dto.getId());
         assertEquals("Jane",       dto.getFirstName());
         assertEquals("Smith",      dto.getLastName());
-        assertEquals("Jane.Smith", dto.getUserName());
+        assertEquals("Jane.Smith", dto.getUsername());
         assertEquals("pass123",    dto.getPassword());
     }
 

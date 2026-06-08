@@ -7,7 +7,8 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class TrainerCreateResponse {
+public class ChangeLoginRequest {
     private String username;
-    private String password;
+    private String oldPassword;
+    private String newPassword;
 }

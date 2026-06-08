@@ -1,8 +1,6 @@
 package com.epam.training.service;
 
-import com.epam.training.dto.TrainerCreateRequest;
-import com.epam.training.dto.TrainerCreateResponse;
-import com.epam.training.dto.TrainerDTO;
+import com.epam.training.dto.*;
 
 import java.util.List;
 import java.util.Optional;
@@ -10,9 +8,15 @@ import java.util.Optional;
 public interface TrainerService {
     TrainerCreateResponse create(TrainerCreateRequest trainer);
 
-    TrainerDTO update(TrainerDTO trainer);
+    Boolean credentialsMatch(LoginRequest credentials);
 
-    Optional<TrainerDTO> findById(Long id);
+    Boolean changePassword(ChangeLoginRequest request);
 
-    List<TrainerDTO> findAll();
+    TrainerUpdateResponse update(TrainerUpdateRequest trainer);
+
+    Optional<TrainerGetResponse> findByUsername(String username);
+
+    List<TrainerDTO> findNotAssignedOnTrainee(String traineeUsername);
+
+    List<TrainerGetResponse> findAll();
 }
