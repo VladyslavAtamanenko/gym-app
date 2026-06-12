@@ -118,6 +118,16 @@ class TraineeServiceImplTest {
     }
 
     @Test
+    @DisplayName("credentialsMatch: returns false when trainee is inactive")
+    void credentialsMatch_returnsFalseForInactiveTrainee() {
+        user.setIsActive(false);
+        LoginRequest login = new LoginRequest("John.Doe", "secret");
+        when(traineeDao.findByUsername("John.Doe")).thenReturn(Optional.of(trainee));
+
+        assertFalse(traineeService.credentialsMatch(login));
+    }
+
+    @Test
     @DisplayName("credentialsMatch: throws NoSuchElementException when trainee not found")
     void credentialsMatch_throwsWhenUserNotFound() {
         LoginRequest login = new LoginRequest("missing", "secret");

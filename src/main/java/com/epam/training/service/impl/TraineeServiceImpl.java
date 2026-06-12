@@ -71,16 +71,18 @@ public class TraineeServiceImpl implements TraineeService {
                     return new NoSuchElementException();
                 });
 
-        String password = trainee.getUser().getPassword();
-        boolean passwordsMatch = password.equals(credentials.getPassword());
-        boolean success = false;
-        if(passwordsMatch){
-            LOGGER.info("Successful login. traineeId=" + trainee.getId() + "traineeUsername=" + trainee.getUser().getUsername());
-            success = true;
+        User user = trainee.getUser();
+        if (!Boolean.TRUE.equals(user.getIsActive())) {
+            LOGGER.warn("Login failed because trainee is inactive. traineeUsername=" + user.getUsername());
+            return false;
+        }
+        boolean passwordsMatch = user.getPassword().equals(credentials.getPassword());
+        if (passwordsMatch) {
+            LOGGER.info("Successful login. traineeId=" + trainee.getId() + "traineeUsername=" + user.getUsername());
         } else {
             LOGGER.warn("Login failed because provided password doesn't match current password");
         }
-        return success;
+        return passwordsMatch;
     }
 
     @Override

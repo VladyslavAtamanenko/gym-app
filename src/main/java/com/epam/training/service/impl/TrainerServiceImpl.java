@@ -63,16 +63,18 @@ public class TrainerServiceImpl implements TrainerService {
         validateLoginRequest(credentials);
         Trainer trainer = findTrainerOrThrow(credentials.getUsername());
 
-        String password = trainer.getUser().getPassword();
-        boolean passwordsMatch = password.equals(credentials.getPassword());
-        boolean success = false;
+        User user = trainer.getUser();
+        if (!Boolean.TRUE.equals(user.getIsActive())) {
+            LOGGER.warn("Login failed because trainer is inactive. trainerUsername=" + user.getUsername());
+            return false;
+        }
+        boolean passwordsMatch = user.getPassword().equals(credentials.getPassword());
         if (passwordsMatch) {
-            LOGGER.info("Successful login. trainerId=" + trainer.getId() + "trainerUsername=" + trainer.getUser().getUsername());
-            success = true;
+            LOGGER.info("Successful login. trainerId=" + trainer.getId() + "trainerUsername=" + user.getUsername());
         } else {
             LOGGER.warn("Login failed because provided password doesn't match current password");
         }
-        return success;
+        return passwordsMatch;
     }
 
     @Override
