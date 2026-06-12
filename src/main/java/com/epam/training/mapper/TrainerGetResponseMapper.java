@@ -11,6 +11,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
+import java.util.Optional;
 
 @Component
 public class TrainerGetResponseMapper implements ToDTOMapper<Trainer, TrainerGetResponse>{
@@ -25,7 +26,7 @@ public class TrainerGetResponseMapper implements ToDTOMapper<Trainer, TrainerGet
         dto.setLastName(user.getLastName());
         dto.setIsActive(user.getIsActive());
         dto.setSpecialization(entity.getSpecialization().getName());
-        List<TraineeDTO> trainees = entity.getTrainees().stream()
+        List<TraineeDTO> trainees = Optional.ofNullable(entity.getTrainees()).orElse(List.of()).stream()
                 .map(traineeMapper::toDTO)
                 .toList();
         dto.setTrainees(trainees);

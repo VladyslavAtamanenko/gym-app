@@ -14,11 +14,13 @@ import java.util.List;
 @Builder
 public class Trainer{
     @Id
+    @GeneratedValue(strategy= GenerationType.AUTO)
     private Long id;
-    @ManyToOne
+    @ManyToOne(optional = false)
+    @JoinColumn(name = "specialization_id", nullable = false)
     private TrainingType specialization;
-    @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id")
+    @OneToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL, optional = false)
+    @JoinColumn(name = "user_id", nullable = false, unique = true)
     private User user;
     @ManyToMany(mappedBy = "trainers")
     List<Trainee> trainees;

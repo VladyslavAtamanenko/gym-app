@@ -1,8 +1,10 @@
 package com.epam.training.config;
 
 import jakarta.persistence.EntityManagerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.support.PropertySourcesPlaceholderConfigurer;
 import org.springframework.jdbc.datasource.DriverManagerDataSource;
 import org.springframework.orm.jpa.JpaTransactionManager;
 import org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean;
@@ -17,17 +19,27 @@ import java.util.Properties;
 @EnableTransactionManagement
 public class PersistenceConfig {
 
+    @Value("${DB_URL:jdbc:postgresql://localhost:5432/gym}")
+    private String dbUrl;
+
+    @Value("${DB_USERNAME:postgres}")
+    private String dbUsername;
+
+    @Value("${DB_PASSWORD:0000}")
+    private String dbPassword;
+
+    @Bean
+    public static PropertySourcesPlaceholderConfigurer placeholderConfigurer() {
+        return new PropertySourcesPlaceholderConfigurer();
+    }
+
     @Bean
     public DataSource dataSource() {
-
-        DriverManagerDataSource ds =
-                new DriverManagerDataSource();
-
+        DriverManagerDataSource ds = new DriverManagerDataSource();
         ds.setDriverClassName("org.postgresql.Driver");
-        ds.setUrl("jdbc:postgresql://localhost:5432/gym");
-        ds.setUsername("postgres");
-        ds.setPassword("0000");
-
+        ds.setUrl(dbUrl);
+        ds.setUsername(dbUsername);
+        ds.setPassword(dbPassword);
         return ds;
     }
 

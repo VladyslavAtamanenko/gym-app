@@ -114,7 +114,7 @@ class UserUtilTest {
         User user = makeUser(null, "Jane", "Doe", null);
         userUtil.initializeUser(user);
 
-        assertEquals("Jane.Doe", user.getUserName());
+        assertEquals("Jane.Doe", user.getUsername());
     }
 
 
@@ -131,7 +131,7 @@ class UserUtilTest {
         User result = userUtil.updateUser(old, incoming);
 
         assertEquals(1L,        result.getId());
-        assertEquals("John.Doe", result.getUserName());  // unchanged
+        assertEquals("John.Doe", result.getUsername());  // unchanged
         assertEquals("secret1234",   result.getPassword());   // preserved
         assertFalse(result.getIsActive());                 // updated
 
@@ -154,7 +154,7 @@ class UserUtilTest {
 
         User result = userUtil.updateUser(old, incoming);
 
-        assertEquals("Jonathan.Doe", result.getUserName());
+        assertEquals("Jonathan.Doe", result.getUsername());
         assertEquals("Jonathan", result.getFirstName());
         assertEquals("Doe", result.getLastName());
         assertEquals("secret1234", result.getPassword());   // password preserved
@@ -176,7 +176,7 @@ class UserUtilTest {
 
         User result = userUtil.updateUser(old, incoming);
 
-        assertEquals("John.Smith", result.getUserName());
+        assertEquals("John.Smith", result.getUsername());
     }
 
     @Test

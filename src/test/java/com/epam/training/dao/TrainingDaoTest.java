@@ -1,152 +1,130 @@
 package com.epam.training.dao;
 
-
-import com.epam.training.config.AppConfig;
-import com.epam.training.config.StorageConfig;
-import com.epam.training.model.*;
+import com.epam.training.config.DaoTestAppConfig;
+import com.epam.training.model.Trainee;
+import com.epam.training.model.Trainer;
+import com.epam.training.model.Training;
+import com.epam.training.model.TrainingType;
+import jakarta.transaction.Transactional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 
-import java.time.Duration;
-import java.time.LocalDateTime;
+import java.time.LocalDate;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-@SpringJUnitConfig(AppConfig.class)
-@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
+@SpringJUnitConfig(DaoTestAppConfig.class)
+@Transactional
+@DisplayName("TrainingDao")
 class TrainingDaoTest {
 
-    private static final int SEEDED_RECORDS_COUNT = 10;
-
-    private static final TrainingType FITNESS = new TrainingType(1L, "Fitness");
-    private static final TrainingType YOGA = new TrainingType(2L, "Yoga");
+    @Autowired
+    private TrainingDao trainingDao;
 
     @Autowired
-    private TrainingDao dao;
+    private TraineeDao traineeDao;
 
-    private Training training;
+    @Autowired
+    private TrainerDao trainerDao;
+
+    @Autowired
+    private TrainingTypeDao trainingTypeDao;
+
     private Trainee trainee;
-    private Trainer trainer;
+    private Trainer yogaTrainer;
+    private Trainer fitnessTrainer;
+    private TrainingType yoga;
+    private TrainingType fitness;
 
     @BeforeEach
     void setUp() {
-        User user = new User();
-        user.setFirstName("John");
-        user.setLastName("Doe");
-        user.setUsername("jdoe");
-        user.setPassword("pass");
-        user.setIsActive(true);
+        yoga = trainingTypeDao.findByName("Yoga");
+        fitness = trainingTypeDao.findByName("Fitness");
 
-        trainee = new Trainee();
-        trainee.setUser(user);
+        trainee = traineeDao.save(DaoTestSupport.trainee(
+                "trainee.one", LocalDate.of(1990, 3, 15), "Park Avenue"));
+        yogaTrainer = trainerDao.save(DaoTestSupport.trainer("trainer.yoga", yoga));
+        fitnessTrainer = trainerDao.save(DaoTestSupport.trainer("trainer.fitness", fitness));
 
-        trainer = new Trainer();
-        trainer.setUser(user);
-        trainer.setSpecialization(FITNESS);
-
-        training = new Training();
-        training.setTrainee(trainee);
-        training.setTrainer(trainer);
-        training.setName("Morning Workout");
-        training.setType(FITNESS);
-        training.setDate(LocalDateTime.now());
-        training.setDuration(Duration.ofHours(1));
+        trainingDao.save(DaoTestSupport.training(
+                "Morning Yoga", LocalDate.of(2024, 6, 1), 60, trainee, yogaTrainer, yoga));
+        trainingDao.save(DaoTestSupport.training(
+                "Evening Yoga", LocalDate.of(2024, 7, 15), 45, trainee, yogaTrainer, yoga));
+        trainingDao.save(DaoTestSupport.training(
+                "Fitness Blast", LocalDate.of(2024, 8, 1), 30, trainee, fitnessTrainer, fitness));
     }
 
     @Test
-    @DisplayName("Save with null ID should generate ID and persist")
-    void testSaveGeneratesId() {
-        Training saved = dao.save(training);
+    @DisplayName("Save persists training with LocalDate")
+    void save_persistsTrainingDate() {
+        Training saved = trainingDao.save(DaoTestSupport.training(
+                "New Session", LocalDate.of(2025, 1, 10), 90, trainee, yogaTrainer, yoga));
 
         assertNotNull(saved.getId());
-        assertTrue(dao.findById(saved.getId()).isPresent());
+        assertEquals(LocalDate.of(2025, 1, 10), saved.getDate());
     }
 
     @Test
-    @DisplayName("Save and FindById should persist full training object")
-    void testSaveAndFindById() {
-        Training saved = dao.save(training);
+    @DisplayName("FindByTrainee filters by date range")
+    void findByTrainee_filtersByDateRange() {
+        List<Training> trainings = trainingDao.findByTrainee(
+                "trainee.one", null,
+                LocalDate.of(2024, 6, 1), LocalDate.of(2024, 7, 31), null);
 
-        Training found = dao.findById(saved.getId()).orElseThrow();
-
-        assertEquals("Morning Workout", found.getName());
-        assertEquals(FITNESS, found.getType());
-        assertEquals(FITNESS, found.getTrainer().getSpecialization());
+        assertEquals(2, trainings.size());
+        assertTrue(trainings.stream().allMatch(t ->
+                !t.getDate().isBefore(LocalDate.of(2024, 6, 1))
+                        && !t.getDate().isAfter(LocalDate.of(2024, 7, 31))));
     }
 
     @Test
-    @DisplayName("Save with existing ID should update training")
-    void testSaveUpdatesExisting() {
-        Training saved = dao.save(training);
+    @DisplayName("FindByTrainee filters by training type")
+    void findByTrainee_filtersByTrainingType() {
+        List<Training> trainings = trainingDao.findByTrainee(
+                "trainee.one", "Fitness", null, null, null);
 
-        saved.setName("Updated Workout");
-        saved.setType(YOGA);
-
-        dao.save(saved);
-
-        Training updated = dao.findById(saved.getId()).orElseThrow();
-
-        assertEquals("Updated Workout", updated.getName());
-        assertEquals(YOGA, updated.getType());
+        assertEquals(1, trainings.size());
+        assertEquals("Fitness Blast", trainings.get(0).getName());
     }
 
     @Test
-    @DisplayName("FindAll should return all trainings")
-    void testFindAll() {
-        dao.save(training);
+    @DisplayName("FindByTrainee filters by trainer username")
+    void findByTrainee_filtersByTrainer() {
+        List<Training> trainings = trainingDao.findByTrainee(
+                "trainee.one", null, null, null, "trainer.yoga");
 
-        Training t2 = new Training();
-        t2.setTrainee(trainee);
-        t2.setTrainer(trainer);
-        t2.setName("Evening Yoga");
-        t2.setType(YOGA);
-        t2.setDate(LocalDateTime.now());
-        t2.setDuration(Duration.ofMinutes(45));
-
-        dao.save(t2);
-
-        List<Training> all = dao.findAll();
-
-        assertEquals(SEEDED_RECORDS_COUNT + 2, all.size());
+        assertEquals(2, trainings.size());
     }
 
     @Test
-    @DisplayName("Delete should remove trainee")
-    void testDelete() {
-        Training saved = dao.save(training);
+    @DisplayName("FindByTrainer filters by date range and trainee")
+    void findByTrainer_filtersByDateRangeAndTrainee() {
+        List<Training> trainings = trainingDao.findByTrainer(
+                "trainer.yoga",
+                LocalDate.of(2024, 6, 1),
+                LocalDate.of(2024, 6, 30),
+                "trainee.one");
 
-        dao.delete(saved.getId());
-
-        assertTrue(dao.findById(saved.getId()).isEmpty());
-        assertEquals(SEEDED_RECORDS_COUNT, dao.findAll().size());
+        assertEquals(1, trainings.size());
+        assertEquals("Morning Yoga", trainings.get(0).getName());
+        assertEquals(LocalDate.of(2024, 6, 1), trainings.get(0).getDate());
     }
 
     @Test
-    @DisplayName("Save null training should throw exception")
-    void testSaveNullThrows() {
-        assertThrows(IllegalArgumentException.class, () -> dao.save(null));
+    @DisplayName("FindByTrainer returns all trainings when optional filters are null")
+    void findByTrainer_returnsAllForTrainer() {
+        List<Training> trainings = trainingDao.findByTrainer("trainer.yoga", null, null, null);
+
+        assertEquals(2, trainings.size());
     }
 
     @Test
-    @DisplayName("FindById for non-existent ID should return empty")
-    void testFindByIdNotFound() {
-        assertTrue(dao.findById(999L).isEmpty());
-    }
-
-    @Test
-    @DisplayName("Delete non-existent ID should not throw")
-    void testDeleteNonExistent() {
-        assertDoesNotThrow(() -> dao.delete(999L));
-    }
-
-    @Test
-    @DisplayName("FindAll should return seeded trainings")
-    void testFindAllSeeded() {
-        assertEquals(SEEDED_RECORDS_COUNT, dao.findAll().size());
+    @DisplayName("Save null training throws exception")
+    void save_nullTrainingThrows() {
+        assertThrows(IllegalArgumentException.class, () -> trainingDao.save(null));
     }
 }

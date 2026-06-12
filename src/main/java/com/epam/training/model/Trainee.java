@@ -19,8 +19,8 @@ public class Trainee{
     private Long id;
     private LocalDate dateOfBirth;
     private String address;
-    @OneToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
-    @JoinColumn(name = "user_id")
+    @OneToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL, optional = false)
+    @JoinColumn(name = "user_id", nullable = false, unique = true)
     private User user;
 
     @ManyToMany

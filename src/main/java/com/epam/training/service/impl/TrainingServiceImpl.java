@@ -14,6 +14,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.NoSuchElementException;
@@ -21,6 +22,7 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 
 @Service
+@Transactional
 public class TrainingServiceImpl implements TrainingService {
 
     private static final Log LOGGER = LogFactory.getLog(TrainingServiceImpl.class);
@@ -45,6 +47,7 @@ public class TrainingServiceImpl implements TrainingService {
             LOGGER.warn("Rejected training creation request because request body is null");
             throw new IllegalArgumentException();
         }
+        validateCreateRequest(training);
 
         String traineeUsername = training.getTrainee();
         String trainerUsername = training.getTrainer();
@@ -57,7 +60,7 @@ public class TrainingServiceImpl implements TrainingService {
                     return new NoSuchElementException();
                 });
 
-        if (!Objects.equals(trainer.getSpecialization().getName(), training.getType())){
+        if (!Objects.equals(trainer.getSpecialization().getName(), training.getType())) {
             LOGGER.warn("Training creation failed because trainer specialization doesn't match training type. " +
                     "trainerSpecialization=" + trainer.getSpecialization().getName() + " trainingType=" + training.getType());
             throw new IllegalArgumentException();
@@ -74,6 +77,7 @@ public class TrainingServiceImpl implements TrainingService {
 
         created.setTrainee(trainee);
         created.setTrainer(trainer);
+        created.setType(trainer.getSpecialization());
 
         Training saved = trainingDao.save(created);
         LOGGER.info("Training created successfully. trainingId=" + saved.getId()
@@ -81,9 +85,13 @@ public class TrainingServiceImpl implements TrainingService {
         return true;
     }
 
-
     @Override
     public List<GetTrainingsByTraineeResponse> findByTrainee(GetTrainingsByTraineeRequest request) {
+        if (request == null) {
+            LOGGER.warn("Rejected training search request because request body is null");
+            throw new IllegalArgumentException();
+        }
+        ValidationUtil.requireNonBlank(request.getUsername(), "username");
         List<GetTrainingsByTraineeResponse> result = trainingDao.findByTrainee(request.getUsername(),
                         request.getTrainingType(),
                         request.getFrom(),
@@ -93,13 +101,18 @@ public class TrainingServiceImpl implements TrainingService {
                 .map(byTraineeResponseMapper::toDTO)
                 .collect(Collectors.toList());
         LOGGER.debug("Training list according to request traineeUsername=" + request.getUsername() +
-                "trainingType=" +  request.getTrainingType() + " dateFrom=" + request.getFrom() +
+                "trainingType=" + request.getTrainingType() + " dateFrom=" + request.getFrom() +
                 " dateTo=" + request.getTo() + "trainerUsername=" + request.getTrainer() + " retrieved. count=" + result.size());
         return result;
     }
 
     @Override
     public List<GetTrainingsByTrainerResponse> findByTrainer(GetTrainingsByTrainerRequest request) {
+        if (request == null) {
+            LOGGER.warn("Rejected training search request because request body is null");
+            throw new IllegalArgumentException();
+        }
+        ValidationUtil.requireNonBlank(request.getUsername(), "username");
         List<GetTrainingsByTrainerResponse> result = trainingDao.findByTrainer(request.getUsername(),
                         request.getFrom(),
                         request.getTo(),
@@ -111,6 +124,15 @@ public class TrainingServiceImpl implements TrainingService {
                 " dateFrom=" + request.getFrom() +
                 " dateTo=" + request.getTo() + "trainerUsername=" + request.getTrainee() + " retrieved. count=" + result.size());
         return result;
+    }
+
+    private void validateCreateRequest(TrainingCreateRequest training) {
+        ValidationUtil.requireNonBlank(training.getTrainee(), "trainee");
+        ValidationUtil.requireNonBlank(training.getTrainer(), "trainer");
+        ValidationUtil.requireNonBlank(training.getName(), "name");
+        ValidationUtil.requireNonBlank(training.getType(), "type");
+        ValidationUtil.requireDate(training.getDate(), "date");
+        ValidationUtil.requirePositive(training.getDuration(), "duration");
     }
 
     @Autowired

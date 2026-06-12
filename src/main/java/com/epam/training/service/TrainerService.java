@@ -14,6 +14,10 @@ public interface TrainerService {
 
     TrainerUpdateResponse update(TrainerUpdateRequest trainer);
 
+    TrainerGetResponse activate(String username);
+
+    TrainerGetResponse deactivate(String username);
+
     Optional<TrainerGetResponse> findByUsername(String username);
 
     List<TrainerDTO> findNotAssignedOnTrainee(String traineeUsername);

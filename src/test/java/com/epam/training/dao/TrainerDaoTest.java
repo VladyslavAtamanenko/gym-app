@@ -1,119 +1,108 @@
 package com.epam.training.dao;
 
-
-import com.epam.training.config.AppConfig;
-import com.epam.training.config.StorageConfig;
+import com.epam.training.config.DaoTestAppConfig;
+import com.epam.training.model.Trainee;
 import com.epam.training.model.Trainer;
 import com.epam.training.model.TrainingType;
-import com.epam.training.model.User;
-import org.junit.jupiter.api.Assertions;
+import jakarta.transaction.Transactional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 
+import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-@SpringJUnitConfig(AppConfig.class)
-@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
+@SpringJUnitConfig(DaoTestAppConfig.class)
+@Transactional
+@DisplayName("TrainerDao")
 class TrainerDaoTest {
 
-    private static final int SEEDED_RECORDS_COUNT = 10;
+    @Autowired
+    private TrainerDao trainerDao;
 
     @Autowired
-    private TrainerDao dao;
+    private TraineeDao traineeDao;
 
-    private Trainer trainer;
+    @Autowired
+    private TrainingTypeDao trainingTypeDao;
 
-    private static final TrainingType FITNESS = new TrainingType(1L, "Fitness");
-    private static final TrainingType YOGA = new TrainingType(2L, "Yoga");
+    private TrainingType yoga;
+    private TrainingType fitness;
+    private Trainer assignedTrainer;
+    private Trainer unassignedTrainer;
 
     @BeforeEach
     void setUp() {
-        trainer = new Trainer();
-        trainer.setSpecialization(FITNESS);
+        yoga = trainingTypeDao.findByName("Yoga");
+        fitness = trainingTypeDao.findByName("Fitness");
+
+        assignedTrainer = trainerDao.save(DaoTestSupport.trainer("trainer.assigned", yoga));
+        unassignedTrainer = trainerDao.save(DaoTestSupport.trainer("trainer.free", fitness));
+
+        Trainee trainee = traineeDao.save(DaoTestSupport.trainee(
+                "trainee.one", LocalDate.of(1995, 5, 10), "Main street"));
+        trainee.setTrainers(new ArrayList<>(List.of(assignedTrainer)));
+        traineeDao.save(trainee);
     }
 
     @Test
-    @DisplayName("Save with null ID should generate ID")
-    void testSaveGeneratesId() {
-        Trainer saved = dao.save(trainer);
+    @DisplayName("Save should persist new trainer")
+    void save_persistsTrainer() {
+        Trainer saved = trainerDao.save(DaoTestSupport.trainer("trainer.new", yoga));
 
         assertNotNull(saved.getId());
-        assertTrue(dao.findById(saved.getId()).isPresent());
+        assertEquals("trainer.new", saved.getUser().getUsername());
     }
 
     @Test
-    @DisplayName("Save should persist specialization")
-    void testSavePersistsSpecialization() {
-        Trainer saved = dao.save(trainer);
+    @DisplayName("Save should update existing trainer")
+    void save_updatesTrainer() {
+        assignedTrainer.getUser().setFirstName("Updated");
+        trainerDao.save(assignedTrainer);
 
-        Trainer found = dao.findById(saved.getId()).orElseThrow();
-
-        assertEquals(FITNESS.getId(), found.getSpecialization().getId());
-        assertEquals(FITNESS.getName(), found.getSpecialization().getName());
+        Trainer found = trainerDao.findByUsername("trainer.assigned").orElseThrow();
+        assertEquals("Updated", found.getUser().getFirstName());
     }
 
     @Test
-    @DisplayName("Save with existing ID should update specialization")
-    void testSaveUpdatesExisting() {
-        Trainer saved = dao.save(trainer);
+    @DisplayName("FindByUsername returns trainer when present")
+    void findByUsername_returnsTrainer() {
+        Optional<Trainer> result = trainerDao.findByUsername("trainer.assigned");
 
-        saved.setSpecialization(YOGA);
-        dao.save(saved);
-
-        Trainer updated = dao.findById(saved.getId()).orElseThrow();
-
-        assertEquals(YOGA.getId(), updated.getSpecialization().getId());
-        assertEquals(YOGA.getName(), updated.getSpecialization().getName());
-    }
-
-
-    @Test
-    @DisplayName("FindById should return trainer if exists")
-    void testFindById() {
-        Trainer saved = dao.save(trainer);
-
-        Optional<Trainer> found = dao.findById(saved.getId());
-
-        assertTrue(found.isPresent());
-        assertEquals(FITNESS.getName(), found.get().getSpecialization().getName());
+        assertTrue(result.isPresent());
+        assertEquals("Yoga", result.get().getSpecialization().getName());
     }
 
     @Test
-    @DisplayName("FindAll should return all trainers")
-    void testFindAll() {
-        dao.save(trainer);
-
-        Trainer t2 = new Trainer();
-        t2.setSpecialization(YOGA);
-
-        dao.save(t2);
-
-        List<Trainer> all = dao.findAll();
-        assertEquals(SEEDED_RECORDS_COUNT + 2, all.size());
+    @DisplayName("FindByUsername returns empty for unknown username")
+    void findByUsername_returnsEmpty() {
+        assertTrue(trainerDao.findByUsername("unknown").isEmpty());
     }
 
     @Test
-    @DisplayName("FindById for non-existent ID should return empty")
-    void testFindByIdNotFound() {
-        assertTrue(dao.findById(999L).isEmpty());
+    @DisplayName("FindAll returns all trainers")
+    void findAll_returnsAllTrainers() {
+        assertEquals(2, trainerDao.findAll().size());
     }
 
     @Test
-    @DisplayName("Save null trainer should throw exception")
-    void testSaveNullThrows() {
-        assertThrows(IllegalArgumentException.class, () -> dao.save(null));
+    @DisplayName("FindNotAssignedOnTrainee excludes trainers already linked to trainee")
+    void findNotAssignedOnTrainee_excludesAssignedTrainers() {
+        List<Trainer> trainers = trainerDao.findNotAssignedOnTrainee("trainee.one");
+
+        assertEquals(1, trainers.size());
+        assertEquals("trainer.free", trainers.get(0).getUser().getUsername());
     }
 
     @Test
-    @DisplayName("FindAll should return seeded trainers")
-    void testFindAllSeeded() {
-        assertEquals(SEEDED_RECORDS_COUNT, dao.findAll().size());
+    @DisplayName("Save null trainer throws exception")
+    void save_nullTrainerThrows() {
+        assertThrows(IllegalArgumentException.class, () -> trainerDao.save(null));
     }
 }

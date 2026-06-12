@@ -9,6 +9,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
+import java.util.Optional;
 
 @Component
 public class TraineeGetResponseMapper implements ToDTOMapper<Trainee, TraineeGetResponse>{
@@ -24,7 +25,7 @@ public class TraineeGetResponseMapper implements ToDTOMapper<Trainee, TraineeGet
         dto.setAddress(entity.getAddress());
         dto.setDateOfBirth(entity.getDateOfBirth());
         dto.setIsActive(user.getIsActive());
-        List<TrainerDTO> trainers = entity.getTrainers().stream()
+        List<TrainerDTO> trainers = Optional.ofNullable(entity.getTrainers()).orElse(List.of()).stream()
                 .map(trainerMapper::toDTO)
                 .toList();
         dto.setTrainers(trainers);

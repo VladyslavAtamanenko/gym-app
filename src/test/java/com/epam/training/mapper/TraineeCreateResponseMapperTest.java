@@ -3,35 +3,26 @@ package com.epam.training.mapper;
 import com.epam.training.dto.TraineeCreateResponse;
 import com.epam.training.model.Trainee;
 import com.epam.training.model.User;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-import java.time.LocalDate;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import static org.junit.jupiter.api.Assertions.*;
-
+@DisplayName("TraineeCreateResponseMapper")
 class TraineeCreateResponseMapperTest {
-    private TraineeCreateResponseMapper mapper;
 
-    @BeforeEach
-    void setUp() {
-        mapper = new TraineeCreateResponseMapper();
-        mapper.setUserMapper(new UserCreateResponseMapper());
-    }
+    private final TraineeCreateResponseMapper mapper = new TraineeCreateResponseMapper();
 
     @Test
-    @DisplayName("toDTO: maps id, dateOfBirth, address and nested user response")
-    void toDTO_mapsAllFields() {
-        User user = new User(1L, "Tom", "Ford", "Tom.Ford", "pw", true);
-        Trainee entity = new Trainee(10L, LocalDate.of(1995, 3, 15), "42 Baker St", user);
+    @DisplayName("toDTO: maps username and password from trainee's user")
+    void toDTO_mapsCredentials() {
+        Trainee trainee = Trainee.builder()
+                .user(new User(1L, "Tom", "Ford", "Tom.Ford", "pw", true))
+                .build();
 
-        TraineeCreateResponse dto = mapper.toDTO(entity);
+        TraineeCreateResponse dto = mapper.toDTO(trainee);
 
-        assertEquals(10L,                        dto.getId());
-        assertEquals(LocalDate.of(1995, 3, 15), dto.getDateOfBirth());
-        assertEquals("42 Baker St",              dto.getAddress());
-        assertEquals("Tom.Ford",                 dto.getUser().getUsername());
-        assertEquals("pw",                       dto.getUser().getPassword());
+        assertEquals("Tom.Ford", dto.getUsername());
+        assertEquals("pw", dto.getPassword());
     }
 }

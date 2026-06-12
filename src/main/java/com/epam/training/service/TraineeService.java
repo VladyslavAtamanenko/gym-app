@@ -15,6 +15,10 @@ public interface TraineeService {
 
     TraineeUpdateResponse update(TraineeUpdateRequest trainee);
 
+    TraineeGetResponse activate(String username);
+
+    TraineeGetResponse deactivate(String username);
+
     List<TrainerDTO> updateTrainersList(TraineeUpdateTrainersRequest request);
 
     void delete(String username);

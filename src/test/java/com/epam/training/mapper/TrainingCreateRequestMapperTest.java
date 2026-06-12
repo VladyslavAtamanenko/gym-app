@@ -2,37 +2,32 @@ package com.epam.training.mapper;
 
 import com.epam.training.dto.TrainingCreateRequest;
 import com.epam.training.model.Training;
-import com.epam.training.model.TrainingType;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-import java.time.Duration;
-import java.time.LocalDateTime;
+import java.time.LocalDate;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
+@DisplayName("TrainingCreateRequestMapper")
 class TrainingCreateRequestMapperTest {
+
     private final TrainingCreateRequestMapper mapper = new TrainingCreateRequestMapper();
 
-    private static final TrainingType FITNESS = new TrainingType(1L, "Fitness");
-
     @Test
-    @DisplayName("toEntity: maps all training fields including stub trainee/trainer by ID")
-    void toEntity_mapsAllFields() {
-        LocalDateTime date = LocalDateTime.of(2025, 9, 1, 9, 0);
-        Duration duration  = Duration.ofMinutes(90);
+    @DisplayName("toEntity: maps all fields from TrainingCreateRequest to Training")
+    void toEntity_mapsCurrentTrainingCreateRequest() {
+        LocalDate date = LocalDate.of(2026, 1, 1);
+        TrainingCreateRequest request = new TrainingCreateRequest(
+                "trainee.user", "trainer.user", "Power Session", "Fitness", date, 90);
 
-        TrainingCreateRequest req = new TrainingCreateRequest(
-                1L, 2L, "Power Session", FITNESS, date, duration);
+        Training training = mapper.toEntity(request);
 
-        Training entity = mapper.toEntity(req);
-
-        assertEquals("Power Session", entity.getName());
-        assertEquals(FITNESS,         entity.getType());
-        assertEquals(date,            entity.getDate());
-        assertEquals(duration,        entity.getDuration());
-        // stub objects carry only the IDs; full entities are resolved in the service
-        assertEquals(1L, entity.getTrainee().getId());
-        assertEquals(2L, entity.getTrainer().getId());
+        assertEquals("Power Session", training.getName());
+        assertEquals("Fitness", training.getType().getName());
+        assertEquals(date, training.getDate());
+        assertEquals(90, training.getDuration());
+        assertEquals("trainee.user", training.getTrainee().getUser().getUsername());
+        assertEquals("trainer.user", training.getTrainer().getUser().getUsername());
     }
 }

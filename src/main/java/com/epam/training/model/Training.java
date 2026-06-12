@@ -3,8 +3,7 @@ package com.epam.training.model;
 import jakarta.persistence.*;
 import lombok.*;
 
-import java.time.Duration;
-import java.time.LocalDateTime;
+import java.time.LocalDate;
 
 @Entity
 @Table(name = "trainings")
@@ -17,15 +16,16 @@ public class Training {
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
     private Long id;
-    @ManyToOne
-    @JoinColumn(name = "trainee_id")
+    @ManyToOne(optional = false)
+    @JoinColumn(name = "trainee_id", nullable = false)
     private Trainee trainee;
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "trainer_id")
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "trainer_id", nullable = false)
     private Trainer trainer;
     private String name;
-    @ManyToOne
+    @ManyToOne(optional = false)
+    @JoinColumn(name = "training_type_id", nullable = false)
     private TrainingType type;
-    private LocalDateTime date;
-    private Duration duration;
+    private LocalDate date;
+    private Integer duration;
 }
