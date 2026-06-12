@@ -41,6 +41,7 @@ public class GymApp {
 
     public Boolean changeTraineePassword(LoginRequest loginRequest, ChangeLoginRequest request) {
         ensureTraineeLoggedIn(loginRequest);
+        requireOwnership(loginRequest, request == null ? null : request.getUsername());
         LOGGER.debug("Facade request received: change trainee password. username="
                 + (request == null ? null : request.getUsername()));
         return traineeService.changePassword(request);
@@ -48,6 +49,7 @@ public class GymApp {
 
     public TraineeUpdateResponse updateTrainee(LoginRequest loginRequest, TraineeUpdateRequest trainee){
         ensureTraineeLoggedIn(loginRequest);
+        requireOwnership(loginRequest, trainee == null ? null : trainee.getUsername());
         LOGGER.debug("Facade request received: update trainee. traineeUsername="
                 + (trainee == null ? null : trainee.getUsername()));
         return traineeService.update(trainee);
@@ -60,13 +62,14 @@ public class GymApp {
     }
 
     public TraineeGetResponse deactivateTrainee(LoginRequest loginRequest, String username) {
-        ensureTraineeLoggedIn(loginRequest);
+        ensureTrainerLoggedIn(loginRequest);
         LOGGER.debug("Facade request received: deactivate trainee. traineeUsername=" + username);
         return traineeService.deactivate(username);
     }
 
     public List<TrainerDTO> updateTraineeTrainers(LoginRequest loginRequest, TraineeUpdateTrainersRequest request) {
         ensureTraineeLoggedIn(loginRequest);
+        requireOwnership(loginRequest, request == null ? null : request.getUsername());
         LOGGER.debug("Facade request received: update trainee trainers. traineeUsername="
                 + (request == null ? null : request.getUsername()));
         return traineeService.updateTrainersList(request);
@@ -74,12 +77,14 @@ public class GymApp {
 
     public void deleteTrainee(LoginRequest loginRequest, String username){
         ensureTraineeLoggedIn(loginRequest);
+        requireOwnership(loginRequest, username);
         LOGGER.debug("Facade request received: delete trainee. traineeUsername=" + username);
         traineeService.delete(username);
     }
 
     public Optional<TraineeGetResponse> findTraineeByUsername(LoginRequest loginRequest, String username){
         ensureTraineeLoggedIn(loginRequest);
+        requireOwnership(loginRequest, username);
         LOGGER.debug("Facade request received: find trainee. traineeUsername=" + username);
         return traineeService.findByUsername(username);
     }
@@ -103,6 +108,7 @@ public class GymApp {
 
     public Boolean changeTrainerPassword(LoginRequest loginRequest, ChangeLoginRequest request) {
         ensureTrainerLoggedIn(loginRequest);
+        requireOwnership(loginRequest, request == null ? null : request.getUsername());
         LOGGER.debug("Facade request received: change trainer password. username="
                 + (request == null ? null : request.getUsername()));
         return trainerService.changePassword(request);
@@ -110,6 +116,7 @@ public class GymApp {
 
     public TrainerUpdateResponse updateTrainer(LoginRequest loginRequest, TrainerUpdateRequest trainer){
         ensureTrainerLoggedIn(loginRequest);
+        requireOwnership(loginRequest, trainer == null ? null : trainer.getUsername());
         LOGGER.debug("Facade request received: update trainer. trainerUsername="
                 + (trainer == null ? null : trainer.getUsername()));
         return trainerService.update(trainer);
@@ -129,12 +136,14 @@ public class GymApp {
 
     public Optional<TrainerGetResponse> findTrainerByUsername(LoginRequest loginRequest, String username){
         ensureTrainerLoggedIn(loginRequest);
+        requireOwnership(loginRequest, username);
         LOGGER.debug("Facade request received: find trainer. trainerUsername=" + username);
         return trainerService.findByUsername(username);
     }
 
     public List<TrainerDTO> findNotAssignedTrainers(LoginRequest loginRequest, String traineeUsername) {
         ensureTraineeLoggedIn(loginRequest);
+        requireOwnership(loginRequest, traineeUsername);
         LOGGER.debug("Facade request received: find not assigned trainers. traineeUsername=" + traineeUsername);
         return trainerService.findNotAssignedOnTrainee(traineeUsername);
     }
@@ -147,6 +156,7 @@ public class GymApp {
 
     public Boolean createTraining(LoginRequest loginRequest, TrainingCreateRequest training){
         ensureTrainerLoggedIn(loginRequest);
+        requireOwnership(loginRequest, training == null ? null : training.getTrainer());
         LOGGER.debug("Facade request received: create training. traineeUsername="
                 + (training == null ? null : training.getTrainee())
                 + ", trainerUsername=" + (training == null ? null : training.getTrainer()));
@@ -156,6 +166,7 @@ public class GymApp {
     public List<GetTrainingsByTraineeResponse> findTrainingsByTrainee(LoginRequest loginRequest,
                                                                        GetTrainingsByTraineeRequest request) {
         ensureTraineeLoggedIn(loginRequest);
+        requireOwnership(loginRequest, request == null ? null : request.getUsername());
         LOGGER.debug("Facade request received: list trainings by trainee. traineeUsername="
                 + (request == null ? null : request.getUsername()));
         return trainingService.findByTrainee(request);
@@ -164,6 +175,7 @@ public class GymApp {
     public List<GetTrainingsByTrainerResponse> findTrainingsByTrainer(LoginRequest loginRequest,
                                                                        GetTrainingsByTrainerRequest request) {
         ensureTrainerLoggedIn(loginRequest);
+        requireOwnership(loginRequest, request == null ? null : request.getUsername());
         LOGGER.debug("Facade request received: list trainings by trainer. trainerUsername="
                 + (request == null ? null : request.getUsername()));
         return trainingService.findByTrainer(request);
@@ -178,6 +190,15 @@ public class GymApp {
     private void ensureTrainerLoggedIn(LoginRequest loginRequest) {
         if (!Boolean.TRUE.equals(trainerService.credentialsMatch(loginRequest))) {
             throw new SecurityException("Invalid trainer credentials");
+        }
+    }
+
+    private void requireOwnership(LoginRequest loginRequest, String targetUsername) {
+        if (loginRequest == null || !loginRequest.getUsername().equals(targetUsername)) {
+            LOGGER.warn("Ownership check failed: logged-in user '" +
+                    (loginRequest == null ? null : loginRequest.getUsername()) +
+                    "' attempted to access data of '" + targetUsername + "'");
+            throw new SecurityException("Access denied: you can only manage your own data");
         }
     }
 }

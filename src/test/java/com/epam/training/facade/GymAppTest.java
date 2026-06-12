@@ -58,6 +58,7 @@ class GymAppTest {
     @DisplayName("updateTrainee: delegates to service after successful authentication")
     void updateTrainee_requiresLoginAndDelegates() {
         TraineeUpdateRequest request = new TraineeUpdateRequest();
+        request.setUsername("trainee.user");
         TraineeUpdateResponse response = new TraineeUpdateResponse();
         when(traineeService.credentialsMatch(traineeLogin)).thenReturn(true);
         when(traineeService.update(request)).thenReturn(response);
@@ -72,7 +73,20 @@ class GymAppTest {
     @DisplayName("updateTrainee: throws SecurityException when credentials are invalid")
     void updateTrainee_rejectsInvalidLogin() {
         TraineeUpdateRequest request = new TraineeUpdateRequest();
+        request.setUsername("trainee.user");
         when(traineeService.credentialsMatch(traineeLogin)).thenReturn(false);
+
+        assertThrows(SecurityException.class, () -> gymApp.updateTrainee(traineeLogin, request));
+
+        verify(traineeService, never()).update(any());
+    }
+
+    @Test
+    @DisplayName("updateTrainee: throws SecurityException when updating another user's profile")
+    void updateTrainee_rejectsCrossUserAccess() {
+        TraineeUpdateRequest request = new TraineeUpdateRequest();
+        request.setUsername("other.user");
+        when(traineeService.credentialsMatch(traineeLogin)).thenReturn(true);
 
         assertThrows(SecurityException.class, () -> gymApp.updateTrainee(traineeLogin, request));
 
@@ -96,6 +110,7 @@ class GymAppTest {
     @DisplayName("updateTrainer: delegates to service after successful authentication")
     void updateTrainer_requiresLoginAndDelegates() {
         TrainerUpdateRequest request = new TrainerUpdateRequest();
+        request.setUsername("trainer.user");
         TrainerUpdateResponse response = new TrainerUpdateResponse();
         when(trainerService.credentialsMatch(trainerLogin)).thenReturn(true);
         when(trainerService.update(request)).thenReturn(response);
@@ -110,7 +125,20 @@ class GymAppTest {
     @DisplayName("updateTrainer: throws SecurityException when credentials are invalid")
     void updateTrainer_rejectsInvalidLogin() {
         TrainerUpdateRequest request = new TrainerUpdateRequest();
+        request.setUsername("trainer.user");
         when(trainerService.credentialsMatch(trainerLogin)).thenReturn(false);
+
+        assertThrows(SecurityException.class, () -> gymApp.updateTrainer(trainerLogin, request));
+
+        verify(trainerService, never()).update(any());
+    }
+
+    @Test
+    @DisplayName("updateTrainer: throws SecurityException when updating another user's profile")
+    void updateTrainer_rejectsCrossUserAccess() {
+        TrainerUpdateRequest request = new TrainerUpdateRequest();
+        request.setUsername("other.user");
+        when(trainerService.credentialsMatch(trainerLogin)).thenReturn(true);
 
         assertThrows(SecurityException.class, () -> gymApp.updateTrainer(trainerLogin, request));
 
@@ -121,6 +149,7 @@ class GymAppTest {
     @DisplayName("createTraining: requires trainer authentication before delegating")
     void createTraining_requiresTrainerLoginAndDelegates() {
         TrainingCreateRequest request = new TrainingCreateRequest();
+        request.setTrainer("trainer.user");
         when(trainerService.credentialsMatch(trainerLogin)).thenReturn(true);
         when(trainingService.create(request)).thenReturn(true);
 
@@ -131,9 +160,22 @@ class GymAppTest {
     }
 
     @Test
+    @DisplayName("createTraining: throws SecurityException when creating training for another trainer")
+    void createTraining_rejectsCrossUserAccess() {
+        TrainingCreateRequest request = new TrainingCreateRequest();
+        request.setTrainer("other.trainer");
+        when(trainerService.credentialsMatch(trainerLogin)).thenReturn(true);
+
+        assertThrows(SecurityException.class, () -> gymApp.createTraining(trainerLogin, request));
+
+        verify(trainingService, never()).create(any());
+    }
+
+    @Test
     @DisplayName("findTrainingsByTrainee: requires trainee authentication before delegating")
     void findTrainingsByTrainee_requiresTraineeLoginAndDelegates() {
         GetTrainingsByTraineeRequest request = new GetTrainingsByTraineeRequest();
+        request.setUsername("trainee.user");
         List<GetTrainingsByTraineeResponse> response = List.of(new GetTrainingsByTraineeResponse());
         when(traineeService.credentialsMatch(traineeLogin)).thenReturn(true);
         when(trainingService.findByTrainee(request)).thenReturn(response);
@@ -142,6 +184,18 @@ class GymAppTest {
 
         verify(traineeService).credentialsMatch(traineeLogin);
         verify(trainingService).findByTrainee(request);
+    }
+
+    @Test
+    @DisplayName("findTrainingsByTrainee: throws SecurityException when accessing another trainee's trainings")
+    void findTrainingsByTrainee_rejectsCrossUserAccess() {
+        GetTrainingsByTraineeRequest request = new GetTrainingsByTraineeRequest();
+        request.setUsername("other.user");
+        when(traineeService.credentialsMatch(traineeLogin)).thenReturn(true);
+
+        assertThrows(SecurityException.class, () -> gymApp.findTrainingsByTrainee(traineeLogin, request));
+
+        verify(trainingService, never()).findByTrainee(any());
     }
 
     @Test
@@ -157,11 +211,11 @@ class GymAppTest {
     }
 
     @Test
-    @DisplayName("deactivateTrainee: throws SecurityException when credentials are invalid")
+    @DisplayName("deactivateTrainee: throws SecurityException when trainer credentials are invalid")
     void deactivateTrainee_rejectsInvalidLogin() {
-        when(traineeService.credentialsMatch(traineeLogin)).thenReturn(false);
+        when(trainerService.credentialsMatch(trainerLogin)).thenReturn(false);
 
-        assertThrows(SecurityException.class, () -> gymApp.deactivateTrainee(traineeLogin, "trainee.user"));
+        assertThrows(SecurityException.class, () -> gymApp.deactivateTrainee(trainerLogin, "trainee.user"));
 
         verify(traineeService, never()).deactivate(any());
     }
@@ -216,6 +270,17 @@ class GymAppTest {
     }
 
     @Test
+    @DisplayName("deleteTrainee: throws SecurityException when deleting another user's profile")
+    void deleteTrainee_rejectsCrossUserAccess() {
+        when(traineeService.credentialsMatch(traineeLogin)).thenReturn(true);
+
+        assertThrows(SecurityException.class, () -> gymApp.deleteTrainee(traineeLogin, "other.user"));
+
+        verify(traineeService, never()).delete(any());
+    }
+
+
+    @Test
     @DisplayName("findTraineeByUsername: requires trainee authentication before lookup")
     void findTraineeByUsername_requiresLogin() {
         when(traineeService.credentialsMatch(traineeLogin)).thenReturn(true);
@@ -235,9 +300,22 @@ class GymAppTest {
     @DisplayName("updateTraineeTrainers: requires trainee authentication before updating")
     void updateTraineeTrainers_requiresLogin() {
         TraineeUpdateTrainersRequest request = new TraineeUpdateTrainersRequest();
+        request.setUsername("trainee.user");
         when(traineeService.credentialsMatch(traineeLogin)).thenReturn(true);
         when(traineeService.updateTrainersList(request)).thenReturn(List.of());
         assertTrue(gymApp.updateTraineeTrainers(traineeLogin, request).isEmpty());
+    }
+
+    @Test
+    @DisplayName("updateTraineeTrainers: throws SecurityException when updating another trainee's trainers")
+    void updateTraineeTrainers_rejectsCrossUserAccess() {
+        TraineeUpdateTrainersRequest request = new TraineeUpdateTrainersRequest();
+        request.setUsername("other.user");
+        when(traineeService.credentialsMatch(traineeLogin)).thenReturn(true);
+
+        assertThrows(SecurityException.class, () -> gymApp.updateTraineeTrainers(traineeLogin, request));
+
+        verify(traineeService, never()).updateTrainersList(any());
     }
 
     @Test
@@ -260,9 +338,22 @@ class GymAppTest {
     @DisplayName("findTrainingsByTrainer: requires trainer authentication before listing")
     void findTrainingsByTrainer_requiresTrainerLogin() {
         GetTrainingsByTrainerRequest request = new GetTrainingsByTrainerRequest();
+        request.setUsername("trainer.user");
         when(trainerService.credentialsMatch(trainerLogin)).thenReturn(true);
         when(trainingService.findByTrainer(request)).thenReturn(List.of());
         assertTrue(gymApp.findTrainingsByTrainer(trainerLogin, request).isEmpty());
+    }
+
+    @Test
+    @DisplayName("findTrainingsByTrainer: throws SecurityException when accessing another trainer's trainings")
+    void findTrainingsByTrainer_rejectsCrossUserAccess() {
+        GetTrainingsByTrainerRequest request = new GetTrainingsByTrainerRequest();
+        request.setUsername("other.user");
+        when(trainerService.credentialsMatch(trainerLogin)).thenReturn(true);
+
+        assertThrows(SecurityException.class, () -> gymApp.findTrainingsByTrainer(trainerLogin, request));
+
+        verify(trainingService, never()).findByTrainer(any());
     }
 
     @Test
