@@ -5,7 +5,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
 
 @Configuration
-@Import({StorageConfig.class, TestPersistenceConfig.class})
+@Import( TestPersistenceConfig.class)
 @ComponentScan(basePackages = {
         "com.epam.training.dao",
         "com.epam.training.service",
