@@ -72,10 +72,6 @@ public class TraineeServiceImpl implements TraineeService {
                 });
 
         User user = trainee.getUser();
-        if (!Boolean.TRUE.equals(user.getIsActive())) {
-            LOGGER.warn("Login failed because trainee is inactive. traineeUsername=" + user.getUsername());
-            return false;
-        }
         boolean passwordsMatch = user.getPassword().equals(credentials.getPassword());
         if (passwordsMatch) {
             LOGGER.info("Successful login. traineeId=" + trainee.getId() + "traineeUsername=" + user.getUsername());

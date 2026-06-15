@@ -57,12 +57,14 @@ public class GymApp {
 
     public TraineeGetResponse activateTrainee(LoginRequest loginRequest, String username) {
         ensureTraineeLoggedIn(loginRequest);
+        requireOwnership(loginRequest, username);
         LOGGER.debug("Facade request received: activate trainee. traineeUsername=" + username);
         return traineeService.activate(username);
     }
 
     public TraineeGetResponse deactivateTrainee(LoginRequest loginRequest, String username) {
-        ensureTrainerLoggedIn(loginRequest);
+        ensureTraineeLoggedIn(loginRequest);
+        requireOwnership(loginRequest, username);
         LOGGER.debug("Facade request received: deactivate trainee. traineeUsername=" + username);
         return traineeService.deactivate(username);
     }
@@ -124,12 +126,14 @@ public class GymApp {
 
     public TrainerGetResponse activateTrainer(LoginRequest loginRequest, String username) {
         ensureTrainerLoggedIn(loginRequest);
+        requireOwnership(loginRequest, username);
         LOGGER.debug("Facade request received: activate trainer. trainerUsername=" + username);
         return trainerService.activate(username);
     }
 
     public TrainerGetResponse deactivateTrainer(LoginRequest loginRequest, String username) {
         ensureTrainerLoggedIn(loginRequest);
+        requireOwnership(loginRequest, username);
         LOGGER.debug("Facade request received: deactivate trainer. trainerUsername=" + username);
         return trainerService.deactivate(username);
     }

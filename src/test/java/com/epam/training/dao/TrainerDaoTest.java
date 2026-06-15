@@ -101,6 +101,17 @@ class TrainerDaoTest {
     }
 
     @Test
+    @DisplayName("FindNotAssignedOnTrainee excludes inactive trainers")
+    void findNotAssignedOnTrainee_excludesInactiveTrainers() {
+        unassignedTrainer.getUser().setIsActive(false);
+        trainerDao.save(unassignedTrainer);
+
+        List<Trainer> trainers = trainerDao.findNotAssignedOnTrainee("trainee.one");
+
+        assertTrue(trainers.isEmpty());
+    }
+
+    @Test
     @DisplayName("Save null trainer throws exception")
     void save_nullTrainerThrows() {
         assertThrows(IllegalArgumentException.class, () -> trainerDao.save(null));

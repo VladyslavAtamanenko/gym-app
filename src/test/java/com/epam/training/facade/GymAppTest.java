@@ -211,11 +211,11 @@ class GymAppTest {
     }
 
     @Test
-    @DisplayName("deactivateTrainee: throws SecurityException when trainer credentials are invalid")
+    @DisplayName("deactivateTrainee: throws SecurityException when credentials are invalid")
     void deactivateTrainee_rejectsInvalidLogin() {
-        when(trainerService.credentialsMatch(trainerLogin)).thenReturn(false);
+        when(traineeService.credentialsMatch(traineeLogin)).thenReturn(false);
 
-        assertThrows(SecurityException.class, () -> gymApp.deactivateTrainee(trainerLogin, "trainee.user"));
+        assertThrows(SecurityException.class, () -> gymApp.deactivateTrainee(traineeLogin, "trainee.user"));
 
         verify(traineeService, never()).deactivate(any());
     }
@@ -277,6 +277,46 @@ class GymAppTest {
         assertThrows(SecurityException.class, () -> gymApp.deleteTrainee(traineeLogin, "other.user"));
 
         verify(traineeService, never()).delete(any());
+    }
+
+    @Test
+    @DisplayName("activateTrainee: throws SecurityException when activating another user's profile")
+    void activateTrainee_rejectsCrossUserAccess() {
+        when(traineeService.credentialsMatch(traineeLogin)).thenReturn(true);
+
+        assertThrows(SecurityException.class, () -> gymApp.activateTrainee(traineeLogin, "other.user"));
+
+        verify(traineeService, never()).activate(any());
+    }
+
+    @Test
+    @DisplayName("deactivateTrainee: throws SecurityException when deactivating another user's profile")
+    void deactivateTrainee_rejectsCrossUserAccess() {
+        when(traineeService.credentialsMatch(traineeLogin)).thenReturn(true);
+
+        assertThrows(SecurityException.class, () -> gymApp.deactivateTrainee(traineeLogin, "other.user"));
+
+        verify(traineeService, never()).deactivate(any());
+    }
+
+    @Test
+    @DisplayName("activateTrainer: throws SecurityException when activating another user's profile")
+    void activateTrainer_rejectsCrossUserAccess() {
+        when(trainerService.credentialsMatch(trainerLogin)).thenReturn(true);
+
+        assertThrows(SecurityException.class, () -> gymApp.activateTrainer(trainerLogin, "other.user"));
+
+        verify(trainerService, never()).activate(any());
+    }
+
+    @Test
+    @DisplayName("deactivateTrainer: throws SecurityException when deactivating another user's profile")
+    void deactivateTrainer_rejectsCrossUserAccess() {
+        when(trainerService.credentialsMatch(trainerLogin)).thenReturn(true);
+
+        assertThrows(SecurityException.class, () -> gymApp.deactivateTrainer(trainerLogin, "other.user"));
+
+        verify(trainerService, never()).deactivate(any());
     }
 
 

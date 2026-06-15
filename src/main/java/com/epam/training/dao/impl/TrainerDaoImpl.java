@@ -74,7 +74,8 @@ public class TrainerDaoImpl implements TrainerDao {
                 """
                 SELECT tr
                 FROM Trainer tr
-                WHERE tr.id NOT IN (
+                WHERE tr.user.isActive = true
+                AND tr.id NOT IN (
                     SELECT assigned.id
                     FROM Trainee te
                     JOIN te.trainers assigned

@@ -64,10 +64,6 @@ public class TrainerServiceImpl implements TrainerService {
         Trainer trainer = findTrainerOrThrow(credentials.getUsername());
 
         User user = trainer.getUser();
-        if (!Boolean.TRUE.equals(user.getIsActive())) {
-            LOGGER.warn("Login failed because trainer is inactive. trainerUsername=" + user.getUsername());
-            return false;
-        }
         boolean passwordsMatch = user.getPassword().equals(credentials.getPassword());
         if (passwordsMatch) {
             LOGGER.info("Successful login. trainerId=" + trainer.getId() + "trainerUsername=" + user.getUsername());
