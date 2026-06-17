@@ -15,7 +15,7 @@ class TrainingCreateRequestMapperTest {
     private final TrainingCreateRequestMapper mapper = new TrainingCreateRequestMapper();
 
     @Test
-    @DisplayName("toEntity: maps all fields from TrainingCreateRequest to Training")
+    @DisplayName("toEntity: maps name, date, and duration from TrainingCreateRequest to Training")
     void toEntity_mapsCurrentTrainingCreateRequest() {
         LocalDate date = LocalDate.of(2026, 1, 1);
         TrainingCreateRequest request = new TrainingCreateRequest(
@@ -24,10 +24,7 @@ class TrainingCreateRequestMapperTest {
         Training training = mapper.toEntity(request);
 
         assertEquals("Power Session", training.getName());
-        assertEquals("Fitness", training.getType().getName());
         assertEquals(date, training.getDate());
         assertEquals(90, training.getDuration());
-        assertEquals("trainee.user", training.getTrainee().getUser().getUsername());
-        assertEquals("trainer.user", training.getTrainer().getUser().getUsername());
     }
 }

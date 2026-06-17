@@ -116,12 +116,12 @@ class TrainerServiceImplTest {
     }
 
     @Test
-    @DisplayName("credentialsMatch: throws NoSuchElementException when trainer not found")
-    void credentialsMatch_throwsWhenUserNotFound() {
+    @DisplayName("credentialsMatch: returns false when trainer not found")
+    void credentialsMatch_returnsFalseWhenUserNotFound() {
         LoginRequest login = new LoginRequest("missing", "secret");
         when(trainerDao.findByUsername("missing")).thenReturn(Optional.empty());
 
-        assertThrows(NoSuchElementException.class, () -> trainerService.credentialsMatch(login));
+        assertFalse(trainerService.credentialsMatch(login));
     }
 
     @Test
@@ -151,8 +151,8 @@ class TrainerServiceImplTest {
     }
 
     @Test
-    @DisplayName("update: preserves current isActive state and applies new specialization")
-    void update_preservesActiveState() {
+    @DisplayName("update: applies isActive from request and updates specialization")
+    void update_appliesIsActiveAndSpecialization() {
         TrainerUpdateRequest request = new TrainerUpdateRequest(
                 "Jane.Smith", "Jane", "Smith", "Yoga", false);
         TrainerUpdateResponse response = new TrainerUpdateResponse();
@@ -165,7 +165,7 @@ class TrainerServiceImplTest {
 
         assertEquals(response, trainerService.update(request));
 
-        verify(userUtil).updateUser(eq(user), argThat(u -> Boolean.TRUE.equals(u.getIsActive())));
+        verify(userUtil).updateUser(eq(user), argThat(u -> Boolean.FALSE.equals(u.getIsActive())));
     }
 
     @Test

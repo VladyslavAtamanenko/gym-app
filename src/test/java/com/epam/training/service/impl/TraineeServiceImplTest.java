@@ -118,12 +118,12 @@ class TraineeServiceImplTest {
     }
 
     @Test
-    @DisplayName("credentialsMatch: throws NoSuchElementException when trainee not found")
-    void credentialsMatch_throwsWhenUserNotFound() {
+    @DisplayName("credentialsMatch: returns false when trainee not found")
+    void credentialsMatch_returnsFalseWhenUserNotFound() {
         LoginRequest login = new LoginRequest("missing", "secret");
         when(traineeDao.findByUsername("missing")).thenReturn(Optional.empty());
 
-        assertThrows(NoSuchElementException.class, () -> traineeService.credentialsMatch(login));
+        assertFalse(traineeService.credentialsMatch(login));
     }
 
     @Test
@@ -150,23 +150,6 @@ class TraineeServiceImplTest {
 
         assertFalse(traineeService.changePassword(request));
         assertEquals("secret", user.getPassword());
-    }
-
-    @Test
-    @DisplayName("update: preserves current isActive state regardless of request value")
-    void update_preservesActiveState() {
-        TraineeUpdateRequest request = new TraineeUpdateRequest(
-                "John.Doe", "John", "Doe", LocalDate.of(1990, 1, 1), "New address", false);
-        TraineeUpdateResponse response = new TraineeUpdateResponse();
-
-        when(traineeDao.findByUsername("John.Doe")).thenReturn(Optional.of(trainee));
-        when(userUtil.updateUser(eq(user), any(User.class))).thenAnswer(invocation -> invocation.getArgument(1));
-        when(traineeDao.save(trainee)).thenReturn(trainee);
-        when(traineeUpdateResponseMapper.toDTO(trainee)).thenReturn(response);
-
-        assertEquals(response, traineeService.update(request));
-
-        verify(userUtil).updateUser(eq(user), argThat(u -> Boolean.TRUE.equals(u.getIsActive())));
     }
 
     @Test

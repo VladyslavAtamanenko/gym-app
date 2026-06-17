@@ -65,11 +65,12 @@ public class TraineeServiceImpl implements TraineeService {
             throw new IllegalArgumentException();
         }
         validateLoginRequest(credentials);
-        Trainee trainee = traineeDao.findByUsername(credentials.getUsername())
-                .orElseThrow(() -> {
-                    LOGGER.warn("Login failed because trainee was not found. traineeUsername=" + credentials.getUsername());
-                    return new NoSuchElementException();
-                });
+        Optional<Trainee> found = traineeDao.findByUsername(credentials.getUsername());
+        if (found.isEmpty()) {
+            LOGGER.warn("Login failed because trainee was not found. traineeUsername=" + credentials.getUsername());
+            return false;
+        }
+        Trainee trainee = found.get();
 
         User user = trainee.getUser();
         boolean passwordsMatch = user.getPassword().equals(credentials.getPassword());
@@ -126,7 +127,7 @@ public class TraineeServiceImpl implements TraineeService {
         User updatedUser = User.builder()
                 .firstName(trainee.getFirstName())
                 .lastName(trainee.getLastName())
-                .isActive(updated.getUser().getIsActive())
+                .isActive(trainee.getIsActive())
                 .build();
         updated.setUser(userUtil.updateUser(updated.getUser(), updatedUser));
         Trainee saved = traineeDao.save(updated);
@@ -177,11 +178,14 @@ public class TraineeServiceImpl implements TraineeService {
         trainee.getTrainers().clear();
         List<Trainer> trainers = new ArrayList<>();
 
-        request.getTrainers().stream()
-                .map(t -> trainerDao.findByUsername(t))
-                .filter(Optional::isPresent)
-                .map(Optional::get)
-                .forEach(trainers::add);
+        for (String trainerUsername : request.getTrainers()) {
+            Trainer trainer = trainerDao.findByUsername(trainerUsername)
+                    .orElseThrow(() -> {
+                        LOGGER.warn("Trainers list update failed because trainer was not found. trainerUsername=" + trainerUsername);
+                        return new NoSuchElementException("Trainer not found: " + trainerUsername);
+                    });
+            trainers.add(trainer);
+        }
 
         trainee.getTrainers().addAll(trainers);
 
@@ -239,6 +243,7 @@ public class TraineeServiceImpl implements TraineeService {
         ValidationUtil.requireNonBlank(trainee.getLastName(), "lastName");
         ValidationUtil.requireDate(trainee.getDateOfBirth(), "dateOfBirth");
         ValidationUtil.requireNonBlank(trainee.getAddress(), "address");
+        ValidationUtil.requireNonNull(trainee.getIsActive(), "isActive");
     }
 
     private void rejectIdempotentActiveChange(Boolean current, Boolean requested) {

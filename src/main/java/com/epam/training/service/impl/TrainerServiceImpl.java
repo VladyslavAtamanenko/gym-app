@@ -47,6 +47,7 @@ public class TrainerServiceImpl implements TrainerService {
         validateCreateRequest(trainer);
         LOGGER.debug("Creating trainer from request");
         Trainer created = trainerCreateRequestMapper.toEntity(trainer);
+        created.setSpecialization(specializationDao.findByName(trainer.getSpecialization()));
         User user = created.getUser();
         userUtil.initializeUser(user);
         Trainer saved = trainerDao.save(created);
@@ -61,7 +62,12 @@ public class TrainerServiceImpl implements TrainerService {
             throw new IllegalArgumentException();
         }
         validateLoginRequest(credentials);
-        Trainer trainer = findTrainerOrThrow(credentials.getUsername());
+        Optional<Trainer> found = trainerDao.findByUsername(credentials.getUsername());
+        if (found.isEmpty()) {
+            LOGGER.warn("Login failed because trainer was not found. trainerUsername=" + credentials.getUsername());
+            return false;
+        }
+        Trainer trainer = found.get();
 
         User user = trainer.getUser();
         boolean passwordsMatch = user.getPassword().equals(credentials.getPassword());
@@ -110,7 +116,7 @@ public class TrainerServiceImpl implements TrainerService {
         User updatedUser = User.builder()
                 .firstName(trainer.getFirstName())
                 .lastName(trainer.getLastName())
-                .isActive(updated.getUser().getIsActive())
+                .isActive(trainer.getIsActive())
                 .build();
         updated.setUser(userUtil.updateUser(updated.getUser(), updatedUser));
         Trainer saved = trainerDao.save(updated);
@@ -193,6 +199,7 @@ public class TrainerServiceImpl implements TrainerService {
         ValidationUtil.requireNonBlank(trainer.getFirstName(), "firstName");
         ValidationUtil.requireNonBlank(trainer.getLastName(), "lastName");
         ValidationUtil.requireNonBlank(trainer.getSpecialization(), "specialization");
+        ValidationUtil.requireNonNull(trainer.getIsActive(), "isActive");
     }
 
     private Trainer findTrainerOrThrow(String username) {
