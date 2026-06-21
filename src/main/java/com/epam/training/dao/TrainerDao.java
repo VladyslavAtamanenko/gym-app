@@ -1,6 +1,8 @@
 package com.epam.training.dao;
 
 import com.epam.training.model.Trainer;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 import java.util.List;
 import java.util.Optional;
@@ -13,5 +15,5 @@ public interface TrainerDao {
 
     Optional<Trainer> findByUsername(String username);
 
-    List<Trainer> findNotAssignedOnTrainee(String traineeUsername);
+    Page<Trainer> findNotAssignedOnTrainee(String traineeUsername, Pageable pageable);
 }

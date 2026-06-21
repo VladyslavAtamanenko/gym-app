@@ -1,9 +1,10 @@
 package com.epam.training.service;
 
 import com.epam.training.dto.*;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 import java.util.List;
-import java.util.Optional;
 
 public interface TrainerService {
     TrainerCreateResponse create(TrainerCreateRequest trainer);
@@ -12,15 +13,15 @@ public interface TrainerService {
 
     Boolean changePassword(ChangeLoginRequest request);
 
-    TrainerUpdateResponse update(TrainerUpdateRequest trainer);
+    TrainerUpdateResponse update(String username, TrainerUpdateRequest trainer);
 
     TrainerGetResponse activate(String username);
 
     TrainerGetResponse deactivate(String username);
 
-    Optional<TrainerGetResponse> findByUsername(String username);
+    TrainerGetResponse findByUsername(String username);
 
-    List<TrainerDTO> findNotAssignedOnTrainee(String traineeUsername);
+    Page<TrainerDTO> findNotAssignedOnTrainee(String traineeUsername, Pageable pageable);
 
     List<TrainerGetResponse> findAll();
 }

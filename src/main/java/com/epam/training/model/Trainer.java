@@ -14,7 +14,7 @@ import java.util.List;
 @Builder
 public class Trainer{
     @Id
-    @GeneratedValue(strategy= GenerationType.AUTO)
+    @GeneratedValue(strategy= GenerationType.IDENTITY)
     private Long id;
     @ManyToOne(optional = false)
     @JoinColumn(name = "specialization_id", nullable = false)

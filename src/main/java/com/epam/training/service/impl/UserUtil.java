@@ -6,8 +6,8 @@ import com.epam.training.dao.TrainerDao;
 import com.epam.training.model.User;
 import com.epam.training.util.PasswordGenerator;
 import com.epam.training.util.UsernameGenerator;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -19,7 +19,7 @@ import java.util.stream.Collectors;
 @Component
 public class UserUtil {
 
-    private static final Log LOGGER = LogFactory.getLog(UserUtil.class);
+    private static final Logger log = LoggerFactory.getLogger(UserUtil.class);
 
     @Autowired
     private TrainerDao trainerDao;
@@ -32,7 +32,7 @@ public class UserUtil {
 
     public void initializeUser(User user){
         if (user == null) {
-            LOGGER.warn("Rejected user initialization because user is null");
+            log.warn("Rejected user initialization because user is null");
             throw new IllegalArgumentException("User is null");
         }
 
@@ -47,12 +47,12 @@ public class UserUtil {
         user.setUsername(username);
         user.setPassword(passwordGenerator.generate());
         user.setIsActive(true);
-        LOGGER.info("User initialized for new profile. userId=" + user.getId());
+        log.info("User initialized for new profile. userId={}", user.getId());
     }
 
     public User updateUser(User oldUser, User newUser){
         if (oldUser == null || newUser == null) {
-            LOGGER.warn("Rejected user update because old or new user is null");
+            log.warn("Rejected user update because old or new user is null");
             throw new IllegalArgumentException("User is null");
         }
 
@@ -79,8 +79,7 @@ public class UserUtil {
         }
         updated.setPassword(oldUser.getPassword());
         updated.setIsActive(newUser.getIsActive());
-        LOGGER.info("User profile updated. userId=" + updated.getId()
-                + ", usernameRegenerated=" + nameChanged);
+        log.info("User profile updated. userId={}, usernameRegenerated={}", updated.getId(), nameChanged);
         return updated;
     }
 
@@ -99,7 +98,7 @@ public class UserUtil {
                 .filter(Objects::nonNull)
                 .collect(Collectors.toSet()));
 
-        LOGGER.debug("Collected existing usernames for uniqueness check. count=" + existingUsernames.size());
+        log.debug("Collected existing usernames for uniqueness check. count={}", existingUsernames.size());
         return existingUsernames;
     }
 

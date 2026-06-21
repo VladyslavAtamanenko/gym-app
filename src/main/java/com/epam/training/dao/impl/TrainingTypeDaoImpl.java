@@ -5,19 +5,19 @@ import com.epam.training.model.TrainingType;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import jakarta.persistence.TypedQuery;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import com.epam.training.exception.TrainingTypeNotFoundException;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.NoSuchElementException;
 
 @Repository
 @Transactional
 public class TrainingTypeDaoImpl implements TrainingTypeDao {
 
-    private static final Log LOGGER = LogFactory.getLog(TrainingTypeDaoImpl.class);
+    private static final Logger log = LoggerFactory.getLogger(TrainingTypeDaoImpl.class);
 
     @PersistenceContext
     private EntityManager entityManager;
@@ -26,10 +26,10 @@ public class TrainingTypeDaoImpl implements TrainingTypeDao {
     public TrainingType findById(Long id) {
         TrainingType trainingType = entityManager.find(TrainingType.class, id);
         if (trainingType == null) {
-            LOGGER.warn("Training type not found by id. trainingTypeId=" + id);
-            throw new NoSuchElementException();
+            log.warn("Training type not found by id. trainingTypeId={}", id);
+            throw new TrainingTypeNotFoundException(id);
         }
-        LOGGER.debug("Found training type by id. trainingTypeId=" + id);
+        log.debug("Found training type by id. trainingTypeId={}", id);
         return trainingType;
     }
 
@@ -43,10 +43,10 @@ public class TrainingTypeDaoImpl implements TrainingTypeDao {
         TrainingType trainingType = query.getResultStream()
                 .findFirst()
                 .orElseThrow(() -> {
-                    LOGGER.warn("Training type not found by name. trainingTypeName=" + name);
-                    return new NoSuchElementException();
+                    log.warn("Training type not found by name. trainingTypeName={}", name);
+                    return new TrainingTypeNotFoundException(name);
                 });
-        LOGGER.debug("Found training type by name. trainingTypeName=" + name);
+        log.debug("Found training type by name. trainingTypeName={}", name);
         return trainingType;
     }
 
@@ -56,7 +56,7 @@ public class TrainingTypeDaoImpl implements TrainingTypeDao {
                 "SELECT tt FROM TrainingType tt",
                 TrainingType.class
         ).getResultList();
-        LOGGER.debug("Retrieved training types. count=" + trainingTypes.size());
+        log.debug("Retrieved training types. count={}", trainingTypes.size());
         return trainingTypes;
     }
 }

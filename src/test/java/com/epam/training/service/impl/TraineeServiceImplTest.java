@@ -7,12 +7,12 @@ import com.epam.training.mapper.ToDTOMapper;
 import com.epam.training.mapper.ToEntityMapper;
 import com.epam.training.model.Trainee;
 import com.epam.training.model.Trainer;
+import com.epam.training.exception.TraineeNotFoundException;
 import com.epam.training.model.User;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -39,7 +39,6 @@ class TraineeServiceImplTest {
     @Mock private ToDTOMapper<Trainer, TrainerDTO> trainerMapper;
     @Mock private UserUtil userUtil;
 
-    @InjectMocks
     private TraineeServiceImpl traineeService;
 
     private Trainee trainee;
@@ -47,12 +46,11 @@ class TraineeServiceImplTest {
 
     @BeforeEach
     void setUp() {
-        traineeService.setTraineeCreateRequestMapper(traineeCreateRequestMapper);
-        traineeService.setTraineeCreateResponseMapper(traineeCreateResponseMapper);
-        traineeService.setTraineeUpdateResponseMapper(traineeUpdateResponseMapper);
-        traineeService.setTraineeGetResponseMapper(traineeGetResponseMapper);
-        traineeService.setTrainerMapper(trainerMapper);
-        traineeService.setUserUtil(userUtil);
+        traineeService = new TraineeServiceImpl(
+                traineeDao, trainerDao,
+                traineeCreateRequestMapper, traineeCreateResponseMapper,
+                traineeUpdateResponseMapper, traineeGetResponseMapper,
+                trainerMapper, userUtil);
 
         user = User.builder()
                 .id(1L)
@@ -156,8 +154,8 @@ class TraineeServiceImplTest {
     @DisplayName("update: throws IllegalArgumentException when required fields are missing")
     void update_rejectsMissingRequiredFields() {
         TraineeUpdateRequest request = new TraineeUpdateRequest(
-                "", "John", "Doe", LocalDate.of(1990, 1, 1), "Street", true);
-        assertThrows(IllegalArgumentException.class, () -> traineeService.update(request));
+                "", "Doe", LocalDate.of(1990, 1, 1), "Street", true);
+        assertThrows(IllegalArgumentException.class, () -> traineeService.update("John.Doe", request));
     }
 
     @Test
@@ -204,10 +202,18 @@ class TraineeServiceImplTest {
     }
 
     @Test
-    @DisplayName("delete: delegates deletion to DAO")
+    @DisplayName("delete: delegates deletion to DAO when trainee exists")
     void delete_delegatesToDao() {
+        when(traineeDao.findByUsername("John.Doe")).thenReturn(Optional.of(trainee));
         traineeService.delete("John.Doe");
         verify(traineeDao).delete("John.Doe");
+    }
+
+    @Test
+    @DisplayName("delete: throws TraineeNotFoundException when trainee does not exist")
+    void delete_throwsNotFound() {
+        when(traineeDao.findByUsername("John.Doe")).thenReturn(Optional.empty());
+        assertThrows(TraineeNotFoundException.class, () -> traineeService.delete("John.Doe"));
     }
 
     @Test
@@ -217,7 +223,7 @@ class TraineeServiceImplTest {
         when(traineeDao.findByUsername("John.Doe")).thenReturn(Optional.of(trainee));
         when(traineeGetResponseMapper.toDTO(trainee)).thenReturn(response);
 
-        assertEquals(Optional.of(response), traineeService.findByUsername("John.Doe"));
+        assertEquals(response, traineeService.findByUsername("John.Doe"));
     }
 
     @Test
@@ -235,14 +241,14 @@ class TraineeServiceImplTest {
     void updateTrainersList_replacesTrainers() {
         Trainer trainer = new Trainer();
         trainer.setUser(User.builder().username("Trainer.One").build());
-        TraineeUpdateTrainersRequest request = new TraineeUpdateTrainersRequest("John.Doe", List.of("Trainer.One"));
+        TraineeUpdateTrainersRequest request = new TraineeUpdateTrainersRequest(List.of("Trainer.One"));
         TrainerDTO dto = new TrainerDTO();
 
         when(traineeDao.findByUsername("John.Doe")).thenReturn(Optional.of(trainee));
         when(trainerDao.findByUsername("Trainer.One")).thenReturn(Optional.of(trainer));
         when(trainerMapper.toDTO(trainer)).thenReturn(dto);
 
-        assertEquals(List.of(dto), traineeService.updateTrainersList(request));
+        assertEquals(List.of(dto), traineeService.updateTrainersList("John.Doe", request));
         assertEquals(1, trainee.getTrainers().size());
     }
 }

@@ -12,6 +12,9 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+
 import java.time.LocalDate;
 import java.util.List;
 
@@ -71,9 +74,10 @@ class TrainingDaoTest {
     @Test
     @DisplayName("FindByTrainee filters by date range")
     void findByTrainee_filtersByDateRange() {
+        Pageable all = PageRequest.of(0, Integer.MAX_VALUE);
         List<Training> trainings = trainingDao.findByTrainee(
                 "trainee.one", null,
-                LocalDate.of(2024, 6, 1), LocalDate.of(2024, 7, 31), null);
+                LocalDate.of(2024, 6, 1), LocalDate.of(2024, 7, 31), null, all).getContent();
 
         assertEquals(2, trainings.size());
         assertTrue(trainings.stream().allMatch(t ->
@@ -84,8 +88,9 @@ class TrainingDaoTest {
     @Test
     @DisplayName("FindByTrainee filters by training type")
     void findByTrainee_filtersByTrainingType() {
+        Pageable all = PageRequest.of(0, Integer.MAX_VALUE);
         List<Training> trainings = trainingDao.findByTrainee(
-                "trainee.one", "Fitness", null, null, null);
+                "trainee.one", "Fitness", null, null, null, all).getContent();
 
         assertEquals(1, trainings.size());
         assertEquals("Fitness Blast", trainings.get(0).getName());
@@ -94,8 +99,9 @@ class TrainingDaoTest {
     @Test
     @DisplayName("FindByTrainee filters by trainer username")
     void findByTrainee_filtersByTrainer() {
+        Pageable all = PageRequest.of(0, Integer.MAX_VALUE);
         List<Training> trainings = trainingDao.findByTrainee(
-                "trainee.one", null, null, null, "trainer.yoga");
+                "trainee.one", null, null, null, "trainer.yoga", all).getContent();
 
         assertEquals(2, trainings.size());
     }
@@ -103,11 +109,12 @@ class TrainingDaoTest {
     @Test
     @DisplayName("FindByTrainer filters by date range and trainee")
     void findByTrainer_filtersByDateRangeAndTrainee() {
+        Pageable all = PageRequest.of(0, Integer.MAX_VALUE);
         List<Training> trainings = trainingDao.findByTrainer(
                 "trainer.yoga",
                 LocalDate.of(2024, 6, 1),
                 LocalDate.of(2024, 6, 30),
-                "trainee.one");
+                "trainee.one", all).getContent();
 
         assertEquals(1, trainings.size());
         assertEquals("Morning Yoga", trainings.get(0).getName());
@@ -117,7 +124,8 @@ class TrainingDaoTest {
     @Test
     @DisplayName("FindByTrainer returns all trainings when optional filters are null")
     void findByTrainer_returnsAllForTrainer() {
-        List<Training> trainings = trainingDao.findByTrainer("trainer.yoga", null, null, null);
+        Pageable all = PageRequest.of(0, Integer.MAX_VALUE);
+        List<Training> trainings = trainingDao.findByTrainer("trainer.yoga", null, null, null, all).getContent();
 
         assertEquals(2, trainings.size());
     }

@@ -5,8 +5,8 @@ import com.epam.training.model.Trainee;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import jakarta.persistence.TypedQuery;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -17,7 +17,7 @@ import java.util.Optional;
 @Transactional
 public class TraineeDaoImpl implements TraineeDao {
 
-    private static final Log LOGGER = LogFactory.getLog(TraineeDaoImpl.class);
+    private static final Logger log = LoggerFactory.getLogger(TraineeDaoImpl.class);
 
     @PersistenceContext
     private EntityManager entityManager;
@@ -26,20 +26,18 @@ public class TraineeDaoImpl implements TraineeDao {
     public Trainee save(Trainee trainee) {
 
         if (trainee == null) {
-            LOGGER.warn("Rejected attempt to save null trainee");
+            log.warn("Rejected attempt to save null trainee");
             throw new IllegalArgumentException("Trainee is null");
         }
 
         if (trainee.getId() == null) {
             entityManager.persist(trainee);
-            LOGGER.info("Created trainee. traineeId=" + trainee.getId()
-                    + ", traineeUsername=" + getUsername(trainee));
+            log.info("Created trainee. traineeId={}, traineeUsername={}", trainee.getId(), getUsername(trainee));
             return trainee;
         }
 
         Trainee saved = entityManager.merge(trainee);
-        LOGGER.info("Updated trainee. traineeId=" + saved.getId()
-                + ", traineeUsername=" + getUsername(saved));
+        log.info("Updated trainee. traineeId={}, traineeUsername={}", saved.getId(), getUsername(saved));
         return saved;
     }
 
@@ -54,8 +52,7 @@ public class TraineeDaoImpl implements TraineeDao {
         query.setParameter("username", username);
 
         Optional<Trainee> result = query.getResultStream().findFirst();
-        LOGGER.debug("Trainee lookup completed. traineeUsername=" + username
-                + ", found=" + result.isPresent());
+        log.debug("Trainee lookup completed. traineeUsername={}, found={}", username, result.isPresent());
         return result;
     }
 
@@ -65,7 +62,7 @@ public class TraineeDaoImpl implements TraineeDao {
                 "SELECT t FROM Trainee t",
                 Trainee.class
         ).getResultList();
-        LOGGER.debug("Retrieved trainees. count=" + trainees.size());
+        log.debug("Retrieved trainees. count={}", trainees.size());
         return trainees;
     }
 
@@ -73,11 +70,11 @@ public class TraineeDaoImpl implements TraineeDao {
     public void delete(String username) {
         Optional<Trainee> trainee = findByUsername(username);
         if (trainee.isEmpty()) {
-            LOGGER.warn("Delete requested for missing trainee. traineeUsername=" + username);
+            log.warn("Delete requested for missing trainee. traineeUsername={}", username);
             return;
         }
         entityManager.remove(entityManager.contains(trainee.get()) ? trainee.get() : entityManager.merge(trainee.get()));
-        LOGGER.info("Deleted trainee. traineeUsername=" + username);
+        log.info("Deleted trainee. traineeUsername={}", username);
     }
 
     private String getUsername(Trainee trainee) {

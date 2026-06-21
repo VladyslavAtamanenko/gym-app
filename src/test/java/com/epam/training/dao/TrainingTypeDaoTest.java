@@ -9,8 +9,8 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 
+import com.epam.training.exception.TrainingTypeNotFoundException;
 import java.util.List;
-import java.util.NoSuchElementException;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -41,7 +41,7 @@ class TrainingTypeDaoTest {
     @Test
     @DisplayName("FindByName throws when type is missing")
     void findByName_throwsWhenMissing() {
-        assertThrows(NoSuchElementException.class, () -> trainingTypeDao.findByName("Pilates"));
+        assertThrows(TrainingTypeNotFoundException.class, () -> trainingTypeDao.findByName("Pilates"));
     }
 
     @Test
@@ -55,7 +55,7 @@ class TrainingTypeDaoTest {
     @Test
     @DisplayName("FindById throws when id is missing")
     void findById_throwsWhenMissing() {
-        assertThrows(NoSuchElementException.class, () -> trainingTypeDao.findById(999L));
+        assertThrows(TrainingTypeNotFoundException.class, () -> trainingTypeDao.findById(999L));
     }
 
     @Test
