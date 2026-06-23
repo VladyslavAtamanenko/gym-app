@@ -55,6 +55,80 @@ class TraineeControllerTest {
                 .build();
     }
 
+    // --- GET /trainees/login ---
+
+    @Test
+    @DisplayName("login: returns 200 when credentials are valid")
+    void login_returnsOkOnValidCredentials() throws Exception {
+        when(traineeService.credentialsMatch(any())).thenReturn(true);
+
+        mockMvc.perform(get("/trainees/login")
+                        .param("username", "John.Doe")
+                        .param("password", "secret123"))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    @DisplayName("login: returns 401 when credentials are invalid")
+    void login_returnsUnauthorizedOnInvalidCredentials() throws Exception {
+        when(traineeService.credentialsMatch(any())).thenReturn(false);
+
+        mockMvc.perform(get("/trainees/login")
+                        .param("username", "John.Doe")
+                        .param("password", "wrongpass"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    @DisplayName("login: returns 400 when username is blank")
+    void login_rejectsBlankUsername() throws Exception {
+        mockMvc.perform(get("/trainees/login")
+                        .param("username", "")
+                        .param("password", "secret123"))
+                .andExpect(status().isBadRequest());
+
+        verify(traineeService, never()).credentialsMatch(any());
+    }
+
+    // --- PUT /trainees/{username}/password ---
+
+    @Test
+    @DisplayName("changePassword: returns 200 when old password matches")
+    void changePassword_returnsOkOnSuccess() throws Exception {
+        ChangeLoginRequest req = new ChangeLoginRequest("John.Doe", "oldPass", "newPass");
+        when(traineeService.changePassword(any())).thenReturn(true);
+
+        mockMvc.perform(put("/trainees/John.Doe/password")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(req)))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    @DisplayName("changePassword: returns 401 when old password does not match")
+    void changePassword_returnsUnauthorizedOnMismatch() throws Exception {
+        ChangeLoginRequest req = new ChangeLoginRequest("John.Doe", "wrongOld", "newPass");
+        when(traineeService.changePassword(any())).thenReturn(false);
+
+        mockMvc.perform(put("/trainees/John.Doe/password")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(req)))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    @DisplayName("changePassword: returns 400 when any field is blank")
+    void changePassword_rejectsBlankField() throws Exception {
+        ChangeLoginRequest req = new ChangeLoginRequest("John.Doe", "", "newPass");
+
+        mockMvc.perform(put("/trainees/John.Doe/password")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(req)))
+                .andExpect(status().isBadRequest());
+
+        verify(traineeService, never()).changePassword(any());
+    }
+
     // --- POST /trainees ---
 
     @Test

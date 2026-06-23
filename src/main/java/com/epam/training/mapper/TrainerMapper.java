@@ -13,7 +13,7 @@ public class TrainerMapper implements ToDTOMapper<Trainer, TrainerDTO>{
         TrainerDTO dto = new TrainerDTO();
         User user = entity.getUser();
         dto.setUsername(user.getUsername());
-        dto.setFistName(user.getFirstName());
+        dto.setFirstName(user.getFirstName());
         dto.setLastName(user.getLastName());
         dto.setSpecialization(entity.getSpecialization().getName());
         return dto;

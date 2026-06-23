@@ -9,7 +9,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class TrainerDTO {
     private String username;
-    private String fistName;
+    private String firstName;
     private String lastName;
     private String specialization;
 }
