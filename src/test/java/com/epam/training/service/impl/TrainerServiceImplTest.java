@@ -12,12 +12,12 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
-import java.util.NoSuchElementException;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -38,7 +38,6 @@ class TrainerServiceImplTest {
     @Mock private ToDTOMapper<Trainer, TrainerDTO> trainerMapper;
     @Mock private UserUtil userUtil;
 
-    @InjectMocks
     private TrainerServiceImpl trainerService;
 
     private Trainer trainer;
@@ -47,12 +46,11 @@ class TrainerServiceImplTest {
 
     @BeforeEach
     void setUp() {
-        trainerService.setTrainerCreateRequestMapper(trainerCreateRequestMapper);
-        trainerService.setTrainerCreateResponseMapper(trainerCreateResponseMapper);
-        trainerService.setTrainerGetResponseMapper(trainerGetResponseMapper);
-        trainerService.setTrainerUpdateResponseMapper(trainerUpdateResponseMapper);
-        trainerService.setTrainerMapper(trainerMapper);
-        trainerService.setUserUtil(userUtil);
+        trainerService = new TrainerServiceImpl(
+                trainerDao, specializationDao,
+                trainerCreateRequestMapper, trainerCreateResponseMapper,
+                trainerGetResponseMapper, trainerUpdateResponseMapper,
+                trainerMapper, userUtil);
 
         yoga = TrainingType.builder().id(1L).name("Yoga").build();
         user = User.builder()
@@ -151,28 +149,27 @@ class TrainerServiceImplTest {
     }
 
     @Test
-    @DisplayName("update: applies isActive from request and updates specialization")
+    @DisplayName("update: applies isActive from request; specialization is read-only and not changed")
     void update_appliesIsActiveAndSpecialization() {
-        TrainerUpdateRequest request = new TrainerUpdateRequest(
-                "Jane.Smith", "Jane", "Smith", "Yoga", false);
+        TrainerUpdateRequest request = new TrainerUpdateRequest("Jane", "Smith", "Yoga", false);
         TrainerUpdateResponse response = new TrainerUpdateResponse();
 
         when(trainerDao.findByUsername("Jane.Smith")).thenReturn(Optional.of(trainer));
-        when(specializationDao.findByName("Yoga")).thenReturn(yoga);
         when(userUtil.updateUser(eq(user), any(User.class))).thenAnswer(invocation -> invocation.getArgument(1));
         when(trainerDao.save(trainer)).thenReturn(trainer);
         when(trainerUpdateResponseMapper.toDTO(trainer)).thenReturn(response);
 
-        assertEquals(response, trainerService.update(request));
+        assertEquals(response, trainerService.update("Jane.Smith", request));
 
         verify(userUtil).updateUser(eq(user), argThat(u -> Boolean.FALSE.equals(u.getIsActive())));
+        verifyNoInteractions(specializationDao);
     }
 
     @Test
     @DisplayName("update: throws IllegalArgumentException when required fields are missing")
     void update_rejectsMissingRequiredFields() {
-        TrainerUpdateRequest request = new TrainerUpdateRequest("", "Jane", "Smith", "Yoga", true);
-        assertThrows(IllegalArgumentException.class, () -> trainerService.update(request));
+        TrainerUpdateRequest request = new TrainerUpdateRequest("", "Smith", "Yoga", true);
+        assertThrows(IllegalArgumentException.class, () -> trainerService.update("Jane.Smith", request));
     }
 
     @Test
@@ -225,17 +222,19 @@ class TrainerServiceImplTest {
         when(trainerDao.findByUsername("Jane.Smith")).thenReturn(Optional.of(trainer));
         when(trainerGetResponseMapper.toDTO(trainer)).thenReturn(response);
 
-        assertEquals(Optional.of(response), trainerService.findByUsername("Jane.Smith"));
+        assertEquals(response, trainerService.findByUsername("Jane.Smith"));
     }
 
     @Test
     @DisplayName("findNotAssignedOnTrainee: returns trainers not assigned to given trainee")
     void findNotAssignedOnTrainee_delegatesToDao() {
+        var pageable = PageRequest.of(0, 10);
         TrainerDTO dto = new TrainerDTO();
-        when(trainerDao.findNotAssignedOnTrainee("John.Doe")).thenReturn(List.of(trainer));
+        when(trainerDao.findNotAssignedOnTrainee("John.Doe", pageable))
+                .thenReturn(new PageImpl<>(List.of(trainer), pageable, 1));
         when(trainerMapper.toDTO(trainer)).thenReturn(dto);
 
-        assertEquals(List.of(dto), trainerService.findNotAssignedOnTrainee("John.Doe"));
+        assertEquals(List.of(dto), trainerService.findNotAssignedOnTrainee("John.Doe", pageable).getContent());
     }
 
     @Test

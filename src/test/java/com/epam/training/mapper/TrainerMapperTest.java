@@ -27,7 +27,7 @@ class TrainerMapperTest {
         TrainerDTO dto = mapper.toDTO(trainer);
 
         assertEquals("Lee.Chan", dto.getUsername());
-        assertEquals("Lee", dto.getFistName());
+        assertEquals("Lee", dto.getFirstName());
         assertEquals("Chan", dto.getLastName());
         assertEquals("Fitness", dto.getSpecialization());
     }

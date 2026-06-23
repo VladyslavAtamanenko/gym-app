@@ -15,8 +15,9 @@ import java.util.List;
 @Builder
 public class Trainee{
     @Id
-    @GeneratedValue(strategy= GenerationType.AUTO)
+    @GeneratedValue(strategy= GenerationType.IDENTITY)
     private Long id;
+    @Column(name = "date_of_birth")
     private LocalDate dateOfBirth;
     private String address;
     @OneToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL, optional = false)

@@ -11,6 +11,9 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
@@ -94,7 +97,8 @@ class TrainerDaoTest {
     @Test
     @DisplayName("FindNotAssignedOnTrainee excludes trainers already linked to trainee")
     void findNotAssignedOnTrainee_excludesAssignedTrainers() {
-        List<Trainer> trainers = trainerDao.findNotAssignedOnTrainee("trainee.one");
+        Pageable all = PageRequest.of(0, Integer.MAX_VALUE);
+        List<Trainer> trainers = trainerDao.findNotAssignedOnTrainee("trainee.one", all).getContent();
 
         assertEquals(1, trainers.size());
         assertEquals("trainer.free", trainers.get(0).getUser().getUsername());
@@ -103,10 +107,11 @@ class TrainerDaoTest {
     @Test
     @DisplayName("FindNotAssignedOnTrainee excludes inactive trainers")
     void findNotAssignedOnTrainee_excludesInactiveTrainers() {
+        Pageable all = PageRequest.of(0, Integer.MAX_VALUE);
         unassignedTrainer.getUser().setIsActive(false);
         trainerDao.save(unassignedTrainer);
 
-        List<Trainer> trainers = trainerDao.findNotAssignedOnTrainee("trainee.one");
+        List<Trainer> trainers = trainerDao.findNotAssignedOnTrainee("trainee.one", all).getContent();
 
         assertTrue(trainers.isEmpty());
     }

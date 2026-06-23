@@ -3,25 +3,32 @@ package com.epam.training.service.impl;
 import com.epam.training.dao.TraineeDao;
 import com.epam.training.dao.TrainerDao;
 import com.epam.training.dao.TrainingDao;
-import com.epam.training.dto.*;
+import com.epam.training.dto.GetTrainingsByTraineeResponse;
+import com.epam.training.dto.GetTrainingsByTrainerResponse;
+import com.epam.training.dto.TrainingCreateRequest;
 import com.epam.training.mapper.ToDTOMapper;
 import com.epam.training.mapper.ToEntityMapper;
 import com.epam.training.model.Trainee;
 import com.epam.training.model.Trainer;
 import com.epam.training.model.Training;
 import com.epam.training.model.TrainingType;
+import com.epam.training.exception.TraineeNotFoundException;
+import com.epam.training.exception.TrainerNotFoundException;
 import com.epam.training.model.User;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+
 import java.time.LocalDate;
 import java.util.List;
-import java.util.NoSuchElementException;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -38,7 +45,6 @@ class TrainingServiceImplTest {
     @Mock private ToDTOMapper<Training, GetTrainingsByTraineeResponse> byTraineeResponseMapper;
     @Mock private ToDTOMapper<Training, GetTrainingsByTrainerResponse> byTrainerResponseMapper;
 
-    @InjectMocks
     private TrainingServiceImpl trainingService;
 
     private Trainer trainer;
@@ -48,9 +54,9 @@ class TrainingServiceImplTest {
 
     @BeforeEach
     void setUp() {
-        trainingService.setTrainingCreateRequestMapper(trainingCreateRequestMapper);
-        trainingService.setByTraineeResponseMapper(byTraineeResponseMapper);
-        trainingService.setByTrainerResponseMapper(byTrainerResponseMapper);
+        trainingService = new TrainingServiceImpl(
+                trainingDao, traineeDao, trainerDao,
+                trainingCreateRequestMapper, byTraineeResponseMapper, byTrainerResponseMapper);
 
         yoga = TrainingType.builder().id(1L).name("Yoga").build();
         trainer = Trainer.builder()
@@ -122,18 +128,18 @@ class TrainingServiceImplTest {
     }
 
     @Test
-    @DisplayName("create: throws NoSuchElementException when trainer is not found")
+    @DisplayName("create: throws TrainerNotFoundException when trainer is not found")
     void create_throwsWhenTrainerNotFound() {
         TrainingCreateRequest request = new TrainingCreateRequest(
                 "Trainee.One", "missing", "Morning Yoga", "Yoga",
                 LocalDate.of(2024, 6, 1), 60);
         when(trainerDao.findByUsername("missing")).thenReturn(Optional.empty());
 
-        assertThrows(NoSuchElementException.class, () -> trainingService.create(request));
+        assertThrows(TrainerNotFoundException.class, () -> trainingService.create(request));
     }
 
     @Test
-    @DisplayName("create: throws NoSuchElementException when trainee is not found")
+    @DisplayName("create: throws TraineeNotFoundException when trainee is not found")
     void create_throwsWhenTraineeNotFound() {
         TrainingCreateRequest request = new TrainingCreateRequest(
                 "missing", "Trainer.One", "Morning Yoga", "Yoga",
@@ -141,56 +147,52 @@ class TrainingServiceImplTest {
         when(trainerDao.findByUsername("Trainer.One")).thenReturn(Optional.of(trainer));
         when(traineeDao.findByUsername("missing")).thenReturn(Optional.empty());
 
-        assertThrows(NoSuchElementException.class, () -> trainingService.create(request));
+        assertThrows(TraineeNotFoundException.class, () -> trainingService.create(request));
     }
 
     @Test
     @DisplayName("findByTrainee: returns mapped trainings filtered by criteria")
     void findByTrainee_returnsMappedResults() {
-        GetTrainingsByTraineeRequest request = new GetTrainingsByTraineeRequest(
-                "Trainee.One", LocalDate.of(2024, 1, 1), LocalDate.of(2024, 12, 31), "Trainer.One", "Yoga");
+        Pageable pageable = PageRequest.of(0, 10);
         GetTrainingsByTraineeResponse response = new GetTrainingsByTraineeResponse();
-
         when(trainingDao.findByTrainee("Trainee.One", "Yoga",
-                LocalDate.of(2024, 1, 1), LocalDate.of(2024, 12, 31), "Trainer.One"))
-                .thenReturn(List.of(training));
+                LocalDate.of(2024, 1, 1), LocalDate.of(2024, 12, 31), "Trainer.One", pageable))
+                .thenReturn(new PageImpl<>(List.of(training), pageable, 1));
         when(byTraineeResponseMapper.toDTO(training)).thenReturn(response);
 
-        assertEquals(List.of(response), trainingService.findByTrainee(request));
+        Page<GetTrainingsByTraineeResponse> result = trainingService.findByTrainee(
+                "Trainee.One", LocalDate.of(2024, 1, 1), LocalDate.of(2024, 12, 31), "Trainer.One", "Yoga", pageable);
+        assertEquals(List.of(response), result.getContent());
     }
 
     @Test
     @DisplayName("findByTrainer: returns mapped trainings filtered by criteria")
     void findByTrainer_returnsMappedResults() {
-        GetTrainingsByTrainerRequest request = new GetTrainingsByTrainerRequest(
-                "Trainer.One", LocalDate.of(2024, 1, 1), LocalDate.of(2024, 12, 31), "Trainee.One");
+        Pageable pageable = PageRequest.of(0, 10);
         GetTrainingsByTrainerResponse response = new GetTrainingsByTrainerResponse();
-
         when(trainingDao.findByTrainer("Trainer.One",
-                LocalDate.of(2024, 1, 1), LocalDate.of(2024, 12, 31), "Trainee.One"))
-                .thenReturn(List.of(training));
+                LocalDate.of(2024, 1, 1), LocalDate.of(2024, 12, 31), "Trainee.One", pageable))
+                .thenReturn(new PageImpl<>(List.of(training), pageable, 1));
         when(byTrainerResponseMapper.toDTO(training)).thenReturn(response);
 
-        assertEquals(List.of(response), trainingService.findByTrainer(request));
+        Page<GetTrainingsByTrainerResponse> result = trainingService.findByTrainer(
+                "Trainer.One", LocalDate.of(2024, 1, 1), LocalDate.of(2024, 12, 31), "Trainee.One", pageable);
+        assertEquals(List.of(response), result.getContent());
     }
 
     @Test
-    @DisplayName("findByTrainee: throws IllegalArgumentException when request is null")
-    void findByTrainee_rejectsNullRequest() {
-        assertThrows(IllegalArgumentException.class, () -> trainingService.findByTrainee(null));
+    @DisplayName("findByTrainee: throws IllegalArgumentException when username is blank")
+    void findByTrainee_rejectsBlankUsername() {
+        Pageable pageable = PageRequest.of(0, 10);
+        assertThrows(IllegalArgumentException.class,
+                () -> trainingService.findByTrainee("", null, null, null, null, pageable));
     }
 
     @Test
     @DisplayName("findByTrainer: throws IllegalArgumentException when username is blank")
     void findByTrainer_rejectsBlankUsername() {
-        GetTrainingsByTrainerRequest request = new GetTrainingsByTrainerRequest(
-                "", null, null, null);
-        assertThrows(IllegalArgumentException.class, () -> trainingService.findByTrainer(request));
-    }
-
-    @Test
-    @DisplayName("findByTrainer: throws IllegalArgumentException when request is null")
-    void findByTrainer_rejectsNullRequest() {
-        assertThrows(IllegalArgumentException.class, () -> trainingService.findByTrainer(null));
+        Pageable pageable = PageRequest.of(0, 10);
+        assertThrows(IllegalArgumentException.class,
+                () -> trainingService.findByTrainer("", null, null, null, pageable));
     }
 }

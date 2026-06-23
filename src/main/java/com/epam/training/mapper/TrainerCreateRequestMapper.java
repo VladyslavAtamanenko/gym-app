@@ -2,12 +2,11 @@ package com.epam.training.mapper;
 
 import com.epam.training.dto.TrainerCreateRequest;
 import com.epam.training.model.Trainer;
-import com.epam.training.model.TrainingType;
 import com.epam.training.model.User;
 import org.springframework.stereotype.Component;
 
 @Component
-public class TrainerCreateRequestMapper implements ToEntityMapper<TrainerCreateRequest, Trainer>{
+public class TrainerCreateRequestMapper implements ToEntityMapper<TrainerCreateRequest, Trainer> {
 
     @Override
     public Trainer toEntity(TrainerCreateRequest dto) {
@@ -15,14 +14,8 @@ public class TrainerCreateRequestMapper implements ToEntityMapper<TrainerCreateR
                 .firstName(dto.getFirstName())
                 .lastName(dto.getLastName())
                 .build();
-
-        TrainingType specialization = TrainingType.builder()
-                .name(dto.getSpecialization())
-                .build();
-
         return Trainer.builder()
                 .user(user)
-                .specialization(specialization)
                 .build();
     }
 }

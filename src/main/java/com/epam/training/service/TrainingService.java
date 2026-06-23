@@ -1,14 +1,21 @@
 package com.epam.training.service;
 
-import com.epam.training.dto.*;
+import com.epam.training.dto.GetTrainingsByTraineeResponse;
+import com.epam.training.dto.GetTrainingsByTrainerResponse;
+import com.epam.training.dto.TrainingCreateRequest;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
-import java.util.List;
+import java.time.LocalDate;
 
 public interface TrainingService {
 
     Boolean create(TrainingCreateRequest training);
 
-    List<GetTrainingsByTraineeResponse> findByTrainee(GetTrainingsByTraineeRequest request);
+    Page<GetTrainingsByTraineeResponse> findByTrainee(String username, LocalDate from, LocalDate to,
+                                                      String trainerName, String trainingType,
+                                                      Pageable pageable);
 
-    List<GetTrainingsByTrainerResponse> findByTrainer(GetTrainingsByTrainerRequest request);
+    Page<GetTrainingsByTrainerResponse> findByTrainer(String username, LocalDate from, LocalDate to,
+                                                      String traineeName, Pageable pageable);
 }

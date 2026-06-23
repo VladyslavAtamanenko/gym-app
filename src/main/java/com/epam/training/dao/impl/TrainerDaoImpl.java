@@ -1,13 +1,15 @@
 package com.epam.training.dao.impl;
 
 import com.epam.training.dao.TrainerDao;
-import com.epam.training.model.Trainee;
 import com.epam.training.model.Trainer;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import jakarta.persistence.TypedQuery;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -18,7 +20,7 @@ import java.util.Optional;
 @Transactional
 public class TrainerDaoImpl implements TrainerDao {
 
-    private static final Log LOGGER = LogFactory.getLog(TrainerDaoImpl.class);
+    private static final Logger log = LoggerFactory.getLogger(TrainerDaoImpl.class);
 
     @PersistenceContext
     private EntityManager entityManager;
@@ -26,20 +28,18 @@ public class TrainerDaoImpl implements TrainerDao {
     @Override
     public Trainer save(Trainer trainer) {
         if (trainer == null) {
-            LOGGER.warn("Rejected attempt to save null trainer");
+            log.warn("Rejected attempt to save null trainer");
             throw new IllegalArgumentException("Trainer is null");
         }
 
         if (trainer.getId() == null) {
             entityManager.persist(trainer);
-            LOGGER.info("Created trainer. trainerId=" + trainer.getId()
-                    + ", trainerUsername=" + getUsername(trainer));
+            log.info("Created trainer. trainerId={}, trainerUsername={}", trainer.getId(), getUsername(trainer));
             return trainer;
         }
 
         Trainer saved = entityManager.merge(trainer);
-        LOGGER.info("Updated trainer. trainerId=" + saved.getId()
-                + ", trainerUsername=" + getUsername(saved));
+        log.info("Updated trainer. trainerId={}, trainerUsername={}", saved.getId(), getUsername(saved));
         return saved;
     }
 
@@ -49,7 +49,7 @@ public class TrainerDaoImpl implements TrainerDao {
                 "SELECT t FROM Trainer t",
                 Trainer.class
         ).getResultList();
-        LOGGER.debug("Retrieved trainers. count=" + trainers.size());
+        log.debug("Retrieved trainers. count={}", trainers.size());
         return trainers;
     }
 
@@ -63,16 +63,13 @@ public class TrainerDaoImpl implements TrainerDao {
         query.setParameter("username", username);
 
         Optional<Trainer> result = query.getResultStream().findFirst();
-        LOGGER.debug("Trainer lookup completed. trainerUsername=" + username
-                + ", found=" + result.isPresent());
+        log.debug("Trainer lookup completed. trainerUsername={}, found={}", username, result.isPresent());
         return result;
     }
 
     @Override
-    public List<Trainer> findNotAssignedOnTrainee(String traineeUsername) {
-        TypedQuery<Trainer> query = entityManager.createQuery(
-                """
-                SELECT tr
+    public Page<Trainer> findNotAssignedOnTrainee(String traineeUsername, Pageable pageable) {
+        String where = """
                 FROM Trainer tr
                 WHERE tr.user.isActive = true
                 AND tr.id NOT IN (
@@ -81,15 +78,20 @@ public class TrainerDaoImpl implements TrainerDao {
                     JOIN te.trainers assigned
                     WHERE te.user.username = :traineeUsername
                 )
-                """,
-                Trainer.class
-        );
-        query.setParameter("traineeUsername", traineeUsername);
+                """;
 
-        List<Trainer> trainers = query.getResultList();
-        LOGGER.debug("Retrieved trainers not assigned to trainee. traineeUsername=" + traineeUsername
-                + ", count=" + trainers.size());
-        return trainers;
+        TypedQuery<Trainer> query = entityManager.createQuery("SELECT tr " + where, Trainer.class);
+        query.setParameter("traineeUsername", traineeUsername);
+        query.setFirstResult((int) pageable.getOffset());
+        query.setMaxResults(pageable.getPageSize());
+        List<Trainer> content = query.getResultList();
+
+        Long total = entityManager.createQuery("SELECT COUNT(tr) " + where, Long.class)
+                .setParameter("traineeUsername", traineeUsername)
+                .getSingleResult();
+
+        log.debug("Retrieved trainers not assigned to trainee. traineeUsername={}, count={}", traineeUsername, content.size());
+        return new PageImpl<>(content, pageable, total);
     }
 
     private String getUsername(Trainer trainer) {

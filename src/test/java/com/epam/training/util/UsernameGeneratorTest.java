@@ -60,6 +60,20 @@ public class UsernameGeneratorTest {
 
 
     @Test
+    @DisplayName("dual-role: same firstName+lastName in both roles gets distinct usernames")
+    void generate_dualRole_producesDistinctUsernames() {
+        // John Doe registers as a trainee first → John.Doe
+        String traineeUsername = generator.generate("John", "Doe", Set.of());
+        assertEquals("John.Doe", traineeUsername);
+
+        // Same name registers as a trainer → John.Doe is taken, gets John.Doe1
+        String trainerUsername = generator.generate("John", "Doe", Set.of(traineeUsername));
+        assertEquals("John.Doe1", trainerUsername);
+
+        assertNotEquals(traineeUsername, trainerUsername);
+    }
+
+    @Test
     @DisplayName("result is never null or blank")
     void generate_neverNullOrBlank() {
         String result = generator.generate("A", "B", Set.of());

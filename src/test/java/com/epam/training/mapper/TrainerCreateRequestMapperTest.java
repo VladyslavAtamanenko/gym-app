@@ -22,6 +22,6 @@ class TrainerCreateRequestMapperTest {
         assertNull(trainer.getId());
         assertEquals("Mike", trainer.getUser().getFirstName());
         assertEquals("Ross", trainer.getUser().getLastName());
-        assertEquals("Yoga", trainer.getSpecialization().getName());
+        assertNull(trainer.getSpecialization());
     }
 }

@@ -3,7 +3,6 @@ package com.epam.training.service;
 import com.epam.training.dto.*;
 
 import java.util.List;
-import java.util.Optional;
 
 public interface TraineeService {
 
@@ -13,17 +12,17 @@ public interface TraineeService {
 
     Boolean changePassword(ChangeLoginRequest request);
 
-    TraineeUpdateResponse update(TraineeUpdateRequest trainee);
+    TraineeUpdateResponse update(String username, TraineeUpdateRequest trainee);
 
     TraineeGetResponse activate(String username);
 
     TraineeGetResponse deactivate(String username);
 
-    List<TrainerDTO> updateTrainersList(TraineeUpdateTrainersRequest request);
+    List<TrainerDTO> updateTrainersList(String username, TraineeUpdateTrainersRequest request);
 
     void delete(String username);
 
-    Optional<TraineeGetResponse> findByUsername(String username);
+    TraineeGetResponse findByUsername(String username);
 
     List<TraineeGetResponse> findAll();
 }

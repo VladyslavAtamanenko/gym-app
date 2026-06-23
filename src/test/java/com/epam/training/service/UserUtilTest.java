@@ -1,10 +1,6 @@
 package com.epam.training.service;
 
-
-import com.epam.training.dao.TraineeDao;
-import com.epam.training.dao.TrainerDao;
-import com.epam.training.model.Trainee;
-import com.epam.training.model.Trainer;
+import com.epam.training.dao.UserDao;
 import com.epam.training.model.User;
 import com.epam.training.service.impl.UserUtil;
 import com.epam.training.util.PasswordGenerator;
@@ -17,23 +13,16 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.util.List;
 import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
-import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class UserUtilTest {
 
-    @Mock
-    private TraineeDao traineeDao;
-    @Mock private TrainerDao trainerDao;
+    @Mock private UserDao userDao;
     @Mock private UsernameGenerator usernameGenerator;
     @Mock private PasswordGenerator passwordGenerator;
 
@@ -51,26 +40,11 @@ class UserUtilTest {
         return u;
     }
 
-    private Trainee traineeWith(String username) {
-        Trainee t = new Trainee();
-        t.setUser(makeUser(1L, "A", "B", username));
-        return t;
-    }
-
-    private Trainer trainerWith(String username) {
-        Trainer t = new Trainer();
-        t.setUser(makeUser(2L, "C", "D", username));
-        return t;
-    }
-
-
     @Test
     @DisplayName("initializeUser: sets generated username, password, and isActive=true")
     void initializeUser_setsAllFields() {
-        when(traineeDao.findAll()).thenReturn(List.of(traineeWith("Alice.Smith")));
-        when(trainerDao.findAll()).thenReturn(List.of(trainerWith("Bob.Jones")));
-        when(usernameGenerator.generate(eq("John"), eq("Doe"), anySet()))
-                .thenReturn("John.Doe");
+        when(userDao.findAllUsernames()).thenReturn(Set.of("Alice.Smith", "Bob.Jones"));
+        when(usernameGenerator.generate(eq("John"), eq("Doe"), anySet())).thenReturn("John.Doe");
         when(passwordGenerator.generate()).thenReturn("generatedP");
 
         User user = makeUser(null, "John", "Doe", null);
@@ -82,33 +56,25 @@ class UserUtilTest {
     }
 
     @Test
-    @DisplayName("initializeUser: passes combined trainee+trainer usernames to generator")
-    void initializeUser_collectsExistingUsernames() {
-        when(traineeDao.findAll()).thenReturn(List.of(traineeWith("Trainee.One")));
-        when(trainerDao.findAll()).thenReturn(List.of(trainerWith("Trainer.One")));
-        when(usernameGenerator.generate(anyString(), anyString(), anySet()))
-                .thenReturn("New.User");
+    @DisplayName("initializeUser: passes all existing usernames from users table to generator")
+    void initializeUser_passesExistingUsernamesToGenerator() {
+        when(userDao.findAllUsernames()).thenReturn(Set.of("Trainee.One", "Trainer.One"));
+        when(usernameGenerator.generate(anyString(), anyString(), anySet())).thenReturn("New.User");
         when(passwordGenerator.generate()).thenReturn("pass123456");
 
         User user = makeUser(null, "New", "User", null);
         userUtil.initializeUser(user);
 
-        // capture the Set passed to the generator and verify both sources are included
         ArgumentCaptor<Set<String>> captor = ArgumentCaptor.forClass(Set.class);
         verify(usernameGenerator).generate(eq("New"), eq("User"), captor.capture());
-
-        Set<String> passed = captor.getValue();
-        assertTrue(passed.contains("Trainee.One"));
-        assertTrue(passed.contains("Trainer.One"));
+        assertTrue(captor.getValue().containsAll(Set.of("Trainee.One", "Trainer.One")));
     }
 
     @Test
     @DisplayName("initializeUser: works when no existing users are present")
     void initializeUser_noExistingUsers() {
-        when(traineeDao.findAll()).thenReturn(List.of());
-        when(trainerDao.findAll()).thenReturn(List.of());
-        when(usernameGenerator.generate(eq("Jane"), eq("Doe"), anySet()))
-                .thenReturn("Jane.Doe");
+        when(userDao.findAllUsernames()).thenReturn(Set.of());
+        when(usernameGenerator.generate(eq("Jane"), eq("Doe"), anySet())).thenReturn("Jane.Doe");
         when(passwordGenerator.generate()).thenReturn("pass123456");
 
         User user = makeUser(null, "Jane", "Doe", null);
@@ -117,93 +83,50 @@ class UserUtilTest {
         assertEquals("Jane.Doe", user.getUsername());
     }
 
+    @Test
+    @DisplayName("updateUser: username is always preserved from old user, even when name changes")
+    void updateUser_usernameAlwaysPreserved() {
+        User old = makeUser(1L, "John", "Doe", "John.Doe");
+        User incoming = makeUser(null, "Jonathan", "Doe", null);
+        incoming.setIsActive(true);
+
+        User result = userUtil.updateUser(old, incoming);
+
+        assertEquals("John.Doe", result.getUsername());
+        verifyNoInteractions(usernameGenerator, userDao);
+    }
 
     @Test
-    @DisplayName("updateUser: name unchanged — keeps old username, updates isActive; firstName/lastName NOT set on result")
-    void updateUser_sameNameKeepsUsername() {
+    @DisplayName("updateUser: firstName and lastName are taken from incoming user")
+    void updateUser_appliesNewName() {
         User old = makeUser(1L, "John", "Doe", "John.Doe");
-        old.setPassword("secret1234");
-        old.setIsActive(true);
+        User incoming = makeUser(null, "Jonathan", "Smith", null);
+        incoming.setIsActive(true);
 
+        User result = userUtil.updateUser(old, incoming);
+
+        assertEquals("Jonathan", result.getFirstName());
+        assertEquals("Smith", result.getLastName());
+    }
+
+    @Test
+    @DisplayName("updateUser: isActive is taken from incoming user")
+    void updateUser_appliesIsActive() {
+        User old = makeUser(1L, "John", "Doe", "John.Doe");
+        old.setIsActive(true);
         User incoming = makeUser(null, "John", "Doe", null);
         incoming.setIsActive(false);
 
         User result = userUtil.updateUser(old, incoming);
 
-        assertEquals(1L,        result.getId());
-        assertEquals("John.Doe", result.getUsername());  // unchanged
-        assertEquals("secret1234",   result.getPassword());   // preserved
-        assertFalse(result.getIsActive());                 // updated
-
-        verifyNoInteractions(usernameGenerator, traineeDao, trainerDao);
+        assertFalse(result.getIsActive());
     }
 
     @Test
-    @DisplayName("updateUser: first name changed — regenerates username")
-    void updateUser_firstNameChanged_regeneratesUsername() {
-        User old = makeUser(1L, "John", "Doe", "John.Doe");
-        old.setPassword("secret1234");
-
-        User incoming = makeUser(null, "Jonathan", "Doe", null);
-        incoming.setIsActive(true);
-
-        when(traineeDao.findAll()).thenReturn(List.of());
-        when(trainerDao.findAll()).thenReturn(List.of());
-        when(usernameGenerator.generate(eq("Jonathan"), eq("Doe"), anySet()))
-                .thenReturn("Jonathan.Doe");
-
-        User result = userUtil.updateUser(old, incoming);
-
-        assertEquals("Jonathan.Doe", result.getUsername());
-        assertEquals("Jonathan", result.getFirstName());
-        assertEquals("Doe", result.getLastName());
-        assertEquals("secret1234", result.getPassword());   // password preserved
-    }
-
-    @Test
-    @DisplayName("updateUser: last name changed — regenerates username")
-    void updateUser_lastNameChanged_regeneratesUsername() {
-        User old = makeUser(1L, "John", "Doe", "John.Doe");
-        old.setPassword("pass123456");
-
-        User incoming = makeUser(null, "John", "Smith", null);
-        incoming.setIsActive(true);
-
-        when(traineeDao.findAll()).thenReturn(List.of());
-        when(trainerDao.findAll()).thenReturn(List.of());
-        when(usernameGenerator.generate(eq("John"), eq("Smith"), anySet()))
-                .thenReturn("John.Smith");
-
-        User result = userUtil.updateUser(old, incoming);
-
-        assertEquals("John.Smith", result.getUsername());
-    }
-
-    @Test
-    @DisplayName("updateUser: preserves old ID regardless of name change")
-    void updateUser_preservesId() {
-        User old = makeUser(42L, "John", "Doe", "John.Doe");
-        old.setPassword("pass123456");
-
-        User incoming = makeUser(null, "Jane", "Doe", null);
-        incoming.setIsActive(true);
-
-        when(traineeDao.findAll()).thenReturn(List.of());
-        when(trainerDao.findAll()).thenReturn(List.of());
-        when(usernameGenerator.generate(anyString(), anyString(), anySet()))
-                .thenReturn("Jane.Doe");
-
-        User result = userUtil.updateUser(old, incoming);
-
-        assertEquals(42L, result.getId());
-    }
-
-    @Test
-    @DisplayName("updateUser: password is always taken from old user, never from incoming")
-    void updateUser_passwordAlwaysPreservedFromOld() {
+    @DisplayName("updateUser: password is always taken from old user")
+    void updateUser_passwordPreservedFromOld() {
         User old = makeUser(1L, "John", "Doe", "John.Doe");
         old.setPassword("originalPassword");
-
         User incoming = makeUser(null, "John", "Doe", null);
         incoming.setPassword("attemptedOverwrite");
         incoming.setIsActive(true);
@@ -213,7 +136,18 @@ class UserUtilTest {
         assertEquals("originalPassword", result.getPassword());
     }
 
-    // helper so anySet() compiles cleanly
+    @Test
+    @DisplayName("updateUser: preserves old ID")
+    void updateUser_preservesId() {
+        User old = makeUser(42L, "John", "Doe", "John.Doe");
+        User incoming = makeUser(null, "Jane", "Doe", null);
+        incoming.setIsActive(true);
+
+        User result = userUtil.updateUser(old, incoming);
+
+        assertEquals(42L, result.getId());
+    }
+
     @SuppressWarnings("unchecked")
     private static <T> Set<T> anySet() {
         return any(Set.class);
