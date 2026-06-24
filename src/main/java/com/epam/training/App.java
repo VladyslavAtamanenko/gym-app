@@ -1,13 +1,11 @@
 package com.epam.training;
 
-import com.epam.training.config.AppConfig;
-import org.springframework.context.ApplicationContext;
-import org.springframework.context.annotation.AnnotationConfigApplicationContext;
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
 
-public class App
-{
-    public static void main( String[] args ) {
-        ApplicationContext context =
-                new AnnotationConfigApplicationContext(AppConfig.class);
+@SpringBootApplication
+public class App {
+    public static void main(String[] args) {
+        SpringApplication.run(App.class, args);
     }
 }

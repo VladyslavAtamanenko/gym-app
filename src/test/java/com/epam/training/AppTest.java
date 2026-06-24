@@ -1,16 +1,17 @@
 package com.epam.training;
 
-import com.epam.training.config.AppConfig;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.ActiveProfiles;
 
-@SpringJUnitConfig(AppConfig.class)
+@SpringBootTest
+@ActiveProfiles("local")
 @DisplayName("Application context")
 public class AppTest {
 
     @Test
-    @DisplayName("loads Spring application context without errors")
+    @DisplayName("loads Spring Boot application context without errors")
     void contextLoads() {
     }
 }

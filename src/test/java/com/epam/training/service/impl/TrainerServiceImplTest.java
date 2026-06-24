@@ -12,6 +12,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.mockito.Mock;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
@@ -50,7 +51,7 @@ class TrainerServiceImplTest {
                 trainerDao, specializationDao,
                 trainerCreateRequestMapper, trainerCreateResponseMapper,
                 trainerGetResponseMapper, trainerUpdateResponseMapper,
-                trainerMapper, userUtil);
+                trainerMapper, userUtil, new SimpleMeterRegistry());
 
         yoga = TrainingType.builder().id(1L).name("Yoga").build();
         user = User.builder()

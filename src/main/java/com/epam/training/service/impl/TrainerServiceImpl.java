@@ -9,6 +9,9 @@ import com.epam.training.mapper.ToEntityMapper;
 import com.epam.training.model.Trainer;
 import com.epam.training.model.User;
 import com.epam.training.service.TrainerService;
+import io.micrometer.core.annotation.Counted;
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.MeterRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -36,6 +39,8 @@ public class TrainerServiceImpl implements TrainerService {
     private final ToDTOMapper<Trainer, TrainerUpdateResponse> trainerUpdateResponseMapper;
     private final ToDTOMapper<Trainer, TrainerDTO> trainerMapper;
     private final UserUtil userUtil;
+    private final Counter loginSuccess;
+    private final Counter loginFailure;
 
     @Autowired
     public TrainerServiceImpl(
@@ -46,7 +51,8 @@ public class TrainerServiceImpl implements TrainerService {
             ToDTOMapper<Trainer, TrainerGetResponse> trainerGetResponseMapper,
             ToDTOMapper<Trainer, TrainerUpdateResponse> trainerUpdateResponseMapper,
             ToDTOMapper<Trainer, TrainerDTO> trainerMapper,
-            UserUtil userUtil) {
+            UserUtil userUtil,
+            MeterRegistry meterRegistry) {
         this.trainerDao = trainerDao;
         this.specializationDao = specializationDao;
         this.trainerCreateRequestMapper = trainerCreateRequestMapper;
@@ -55,8 +61,17 @@ public class TrainerServiceImpl implements TrainerService {
         this.trainerUpdateResponseMapper = trainerUpdateResponseMapper;
         this.trainerMapper = trainerMapper;
         this.userUtil = userUtil;
+        this.loginSuccess = Counter.builder("gym.login.attempts")
+                .tag("role", "trainer").tag("result", "success")
+                .description("Successful trainer login attempts")
+                .register(meterRegistry);
+        this.loginFailure = Counter.builder("gym.login.attempts")
+                .tag("role", "trainer").tag("result", "failure")
+                .description("Failed trainer login attempts")
+                .register(meterRegistry);
     }
 
+    @Counted(value = "gym.trainer.registrations", description = "Total trainer registrations")
     @Override
     public TrainerCreateResponse create(TrainerCreateRequest trainer) {
         if (trainer == null) {
@@ -91,8 +106,10 @@ public class TrainerServiceImpl implements TrainerService {
         boolean passwordsMatch = user.getPassword().equals(credentials.getPassword());
         if (passwordsMatch) {
             log.info("Successful login. trainerId={}, trainerUsername={}", trainer.getId(), user.getUsername());
+            loginSuccess.increment();
         } else {
             log.warn("Login failed because provided password doesn't match current password");
+            loginFailure.increment();
         }
         return passwordsMatch;
     }

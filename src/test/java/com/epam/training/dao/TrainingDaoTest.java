@@ -1,6 +1,5 @@
 package com.epam.training.dao;
 
-import com.epam.training.config.DaoTestAppConfig;
 import com.epam.training.model.Trainee;
 import com.epam.training.model.Trainer;
 import com.epam.training.model.Training;
@@ -10,7 +9,9 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
+import com.epam.training.config.DaoTestConfig;
+import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
+import org.springframework.context.annotation.Import;
 
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -20,7 +21,8 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-@SpringJUnitConfig(DaoTestAppConfig.class)
+@DataJpaTest
+@Import(DaoTestConfig.class)
 @Transactional
 @DisplayName("TrainingDao")
 class TrainingDaoTest {

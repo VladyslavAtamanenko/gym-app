@@ -12,6 +12,7 @@ import com.epam.training.model.Trainee;
 import com.epam.training.model.Trainer;
 import com.epam.training.model.Training;
 import com.epam.training.service.TrainingService;
+import io.micrometer.core.annotation.Counted;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -53,6 +54,7 @@ public class TrainingServiceImpl implements TrainingService {
         this.byTrainerResponseMapper = byTrainerResponseMapper;
     }
 
+    @Counted(value = "gym.training.sessions.created", description = "Total training sessions created")
     @Override
     public Boolean create(TrainingCreateRequest training) {
         if (training == null) {

@@ -13,6 +13,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -50,7 +51,7 @@ class TraineeServiceImplTest {
                 traineeDao, trainerDao,
                 traineeCreateRequestMapper, traineeCreateResponseMapper,
                 traineeUpdateResponseMapper, traineeGetResponseMapper,
-                trainerMapper, userUtil);
+                trainerMapper, userUtil, new SimpleMeterRegistry());
 
         user = User.builder()
                 .id(1L)
