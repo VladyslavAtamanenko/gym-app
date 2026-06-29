@@ -3,7 +3,9 @@ package com.epam.training.controller;
 import com.epam.training.dto.*;
 import com.epam.training.exception.TraineeNotFoundException;
 import com.epam.training.exception.handler.GlobalExceptionHandler;
+import com.epam.training.security.JwtUtil;
 import com.epam.training.service.TraineeService;
+import org.springframework.security.core.userdetails.UserDetailsService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
@@ -32,8 +34,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @DisplayName("TraineeController")
 class TraineeControllerTest {
 
-    @Mock
-    private TraineeService traineeService;
+    @Mock private TraineeService traineeService;
+    @Mock private JwtUtil jwtUtil;
+    @Mock private UserDetailsService userDetailsService;
 
     private MockMvc mockMvc;
     private ObjectMapper objectMapper;
@@ -48,7 +51,7 @@ class TraineeControllerTest {
         validator.afterPropertiesSet();
 
         mockMvc = MockMvcBuilders
-                .standaloneSetup(new TraineeController(traineeService))
+                .standaloneSetup(new TraineeController(traineeService, jwtUtil, userDetailsService))
                 .setControllerAdvice(new GlobalExceptionHandler())
                 .setValidator(validator)
                 .setMessageConverters(new MappingJackson2HttpMessageConverter(objectMapper))
@@ -101,7 +104,7 @@ class TraineeControllerTest {
     @DisplayName("register: returns 201 with credentials on valid request")
     void register_returnsCreated() throws Exception {
         TraineeCreateRequest req = new TraineeCreateRequest("John", "Doe", null, null);
-        TraineeCreateResponse resp = new TraineeCreateResponse("John.Doe", "pass123");
+        TraineeCreateResponse resp = new TraineeCreateResponse("John.Doe", "pass123", null);
         when(traineeService.create(any())).thenReturn(resp);
 
         mockMvc.perform(post("/trainees")

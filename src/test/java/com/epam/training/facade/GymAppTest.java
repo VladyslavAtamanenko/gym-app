@@ -44,7 +44,7 @@ class GymAppTest {
     @DisplayName("createTrainee: does not require authentication")
     void createTrainee_doesNotRequireLogin() {
         TraineeCreateRequest request = new TraineeCreateRequest();
-        TraineeCreateResponse response = new TraineeCreateResponse("trainee.user", "pass");
+        TraineeCreateResponse response = new TraineeCreateResponse("trainee.user", "pass", null);
         when(traineeService.create(request)).thenReturn(response);
 
         assertEquals(response, gymApp.createTrainee(request));
@@ -93,7 +93,7 @@ class GymAppTest {
     @DisplayName("createTrainer: does not require authentication")
     void createTrainer_doesNotRequireLogin() {
         TrainerCreateRequest request = new TrainerCreateRequest();
-        TrainerCreateResponse response = new TrainerCreateResponse("trainer.user", "pass");
+        TrainerCreateResponse response = new TrainerCreateResponse("trainer.user", "pass", null);
         when(trainerService.create(request)).thenReturn(response);
 
         assertEquals(response, gymApp.createTrainer(request));

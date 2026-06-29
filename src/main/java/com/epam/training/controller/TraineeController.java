@@ -1,6 +1,7 @@
 package com.epam.training.controller;
 
 import com.epam.training.dto.*;
+import com.epam.training.security.JwtUtil;
 import com.epam.training.service.TraineeService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -12,6 +13,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -22,10 +24,14 @@ import java.util.List;
 public class TraineeController {
 
     private final TraineeService traineeService;
+    private final JwtUtil jwtUtil;
+    private final UserDetailsService userDetailsService;
 
     @Autowired
-    public TraineeController(TraineeService traineeService) {
+    public TraineeController(TraineeService traineeService, JwtUtil jwtUtil, UserDetailsService userDetailsService) {
         this.traineeService = traineeService;
+        this.jwtUtil = jwtUtil;
+        this.userDetailsService = userDetailsService;
     }
 
     @Operation(
@@ -59,7 +65,9 @@ public class TraineeController {
     })
     @PostMapping(consumes = "application/json")
     public ResponseEntity<TraineeCreateResponse> register(@Valid @RequestBody TraineeCreateRequest req) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(traineeService.create(req));
+        TraineeCreateResponse response = traineeService.create(req);
+        response.setToken(jwtUtil.generate(userDetailsService.loadUserByUsername(response.getUsername())));
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
     @Operation(

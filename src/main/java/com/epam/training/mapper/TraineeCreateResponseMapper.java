@@ -11,6 +11,6 @@ public class TraineeCreateResponseMapper implements ToDTOMapper<Trainee, Trainee
     @Override
     public TraineeCreateResponse toDTO(Trainee entity) {
         User user = entity.getUser();
-        return new TraineeCreateResponse(user.getUsername(), user.getPassword());
+        return new TraineeCreateResponse(user.getUsername(), user.getPassword(), null);
     }
 }

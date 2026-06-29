@@ -1,5 +1,7 @@
 package com.epam.training.controller;
 
+import com.epam.training.dto.TrainerCreateResponse;
+import com.epam.training.security.JwtUtil;
 import com.epam.training.security.UserDetailsServiceImpl;
 import com.epam.training.service.TrainerService;
 import org.junit.jupiter.api.DisplayName;
@@ -10,9 +12,12 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.data.domain.Page;
 import org.springframework.http.MediaType;
+import org.springframework.security.core.userdetails.User;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
+
+import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
@@ -27,6 +32,7 @@ class TrainerControllerSecurityTest {
 
     @MockBean private TrainerService trainerService;
     @MockBean private UserDetailsServiceImpl userDetailsService;
+    @MockBean private JwtUtil jwtUtil;
 
     @Autowired private MockMvc mockMvc;
 
@@ -35,6 +41,11 @@ class TrainerControllerSecurityTest {
     @Test
     @DisplayName("register: accessible without authentication")
     void register_isOpen() throws Exception {
+        when(trainerService.create(any())).thenReturn(new TrainerCreateResponse("Alice.Smith", "pass", null));
+        when(userDetailsService.loadUserByUsername("Alice.Smith"))
+                .thenReturn(new User("Alice.Smith", "pass", List.of()));
+        when(jwtUtil.generate(any())).thenReturn("mocked.jwt.token");
+
         mockMvc.perform(post("/trainers")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""

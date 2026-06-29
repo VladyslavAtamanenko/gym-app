@@ -1,6 +1,7 @@
 package com.epam.training.controller;
 
 import com.epam.training.dto.*;
+import com.epam.training.security.JwtUtil;
 import com.epam.training.service.TrainerService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -10,6 +11,8 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.data.domain.Page;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.data.domain.PageRequest;
@@ -26,10 +29,14 @@ import org.springframework.web.bind.annotation.*;
 public class TrainerController {
 
     private final TrainerService trainerService;
+    private final JwtUtil jwtUtil;
+    private final UserDetailsService userDetailsService;
 
     @Autowired
-    public TrainerController(TrainerService trainerService) {
+    public TrainerController(TrainerService trainerService, JwtUtil jwtUtil, UserDetailsService userDetailsService) {
         this.trainerService = trainerService;
+        this.jwtUtil = jwtUtil;
+        this.userDetailsService = userDetailsService;
     }
 
     @Operation(
@@ -63,7 +70,9 @@ public class TrainerController {
     })
     @PostMapping(consumes = "application/json")
     public ResponseEntity<TrainerCreateResponse> register(@Valid @RequestBody TrainerCreateRequest req) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(trainerService.create(req));
+        TrainerCreateResponse response = trainerService.create(req);
+        response.setToken(jwtUtil.generate(userDetailsService.loadUserByUsername(response.getUsername())));
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
     @Operation(

@@ -17,6 +17,7 @@ import io.micrometer.core.instrument.MeterRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -39,6 +40,7 @@ public class TraineeServiceImpl implements TraineeService {
     private final ToDTOMapper<Trainee, TraineeGetResponse> traineeGetResponseMapper;
     private final ToDTOMapper<Trainer, TrainerDTO> trainerMapper;
     private final UserUtil userUtil;
+    private final PasswordEncoder passwordEncoder;
     private final Counter loginSuccess;
     private final Counter loginFailure;
 
@@ -52,6 +54,7 @@ public class TraineeServiceImpl implements TraineeService {
             ToDTOMapper<Trainee, TraineeGetResponse> traineeGetResponseMapper,
             ToDTOMapper<Trainer, TrainerDTO> trainerMapper,
             UserUtil userUtil,
+            PasswordEncoder passwordEncoder,
             MeterRegistry meterRegistry) {
         this.traineeDao = traineeDao;
         this.trainerDao = trainerDao;
@@ -61,6 +64,7 @@ public class TraineeServiceImpl implements TraineeService {
         this.traineeGetResponseMapper = traineeGetResponseMapper;
         this.trainerMapper = trainerMapper;
         this.userUtil = userUtil;
+        this.passwordEncoder = passwordEncoder;
         this.loginSuccess = Counter.builder("gym.login.attempts")
                 .tag("role", "trainee").tag("result", "success")
                 .description("Successful trainee login attempts")
@@ -104,7 +108,7 @@ public class TraineeServiceImpl implements TraineeService {
         }
         Trainee trainee = found.get();
         User user = trainee.getUser();
-        boolean passwordsMatch = user.getPassword().equals(credentials.getPassword());
+        boolean passwordsMatch = passwordEncoder.matches(credentials.getPassword(), user.getPassword());
         if (passwordsMatch) {
             log.info("Successful login. traineeId={}, traineeUsername={}", trainee.getId(), user.getUsername());
             loginSuccess.increment();
@@ -127,11 +131,10 @@ public class TraineeServiceImpl implements TraineeService {
                     log.warn("Password change failed because trainee was not found. traineeUsername={}", request.getUsername());
                     return new TraineeNotFoundException(request.getUsername());
                 });
-        String currentPassword = updated.getUser().getPassword();
-        boolean passwordsMatch = currentPassword.equals(request.getOldPassword());
+        boolean passwordsMatch = passwordEncoder.matches(request.getOldPassword(), updated.getUser().getPassword());
         boolean success = false;
         if (passwordsMatch) {
-            updated.getUser().setPassword(request.getNewPassword());
+            updated.getUser().setPassword(passwordEncoder.encode(request.getNewPassword()));
             log.info("Password updated successfully. traineeId={}, traineeUsername={}", updated.getId(), updated.getUser().getUsername());
             success = true;
         } else {
