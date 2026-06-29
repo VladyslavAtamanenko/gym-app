@@ -7,6 +7,8 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -29,7 +31,11 @@ public class TrainingTypeController {
             summary = "List all training types",
             description = "Returns the complete list of training types available in the system"
     )
-    @ApiResponse(responseCode = "200", description = "List returned (may be empty)")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "List returned (may be empty)"),
+            @ApiResponse(responseCode = "401", description = "Missing or invalid JWT token")
+    })
+    @PreAuthorize("hasAnyRole('TRAINEE', 'TRAINER')")
     @GetMapping
     public ResponseEntity<List<TrainingTypeDTO>> getAll() {
         return ResponseEntity.ok(trainingTypeService.findAll());

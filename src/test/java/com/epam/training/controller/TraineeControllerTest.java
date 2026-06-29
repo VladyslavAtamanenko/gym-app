@@ -3,7 +3,9 @@ package com.epam.training.controller;
 import com.epam.training.dto.*;
 import com.epam.training.exception.TraineeNotFoundException;
 import com.epam.training.exception.handler.GlobalExceptionHandler;
+import com.epam.training.security.JwtUtil;
 import com.epam.training.service.TraineeService;
+import org.springframework.security.core.userdetails.UserDetailsService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
@@ -32,8 +34,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @DisplayName("TraineeController")
 class TraineeControllerTest {
 
-    @Mock
-    private TraineeService traineeService;
+    @Mock private TraineeService traineeService;
+    @Mock private JwtUtil jwtUtil;
+    @Mock private UserDetailsService userDetailsService;
 
     private MockMvc mockMvc;
     private ObjectMapper objectMapper;
@@ -48,47 +51,13 @@ class TraineeControllerTest {
         validator.afterPropertiesSet();
 
         mockMvc = MockMvcBuilders
-                .standaloneSetup(new TraineeController(traineeService))
+                .standaloneSetup(new TraineeController(traineeService, jwtUtil, userDetailsService))
                 .setControllerAdvice(new GlobalExceptionHandler())
                 .setValidator(validator)
                 .setMessageConverters(new MappingJackson2HttpMessageConverter(objectMapper))
                 .build();
     }
 
-    // --- GET /trainees/login ---
-
-    @Test
-    @DisplayName("login: returns 200 when credentials are valid")
-    void login_returnsOkOnValidCredentials() throws Exception {
-        when(traineeService.credentialsMatch(any())).thenReturn(true);
-
-        mockMvc.perform(get("/trainees/login")
-                        .param("username", "John.Doe")
-                        .param("password", "secret123"))
-                .andExpect(status().isOk());
-    }
-
-    @Test
-    @DisplayName("login: returns 401 when credentials are invalid")
-    void login_returnsUnauthorizedOnInvalidCredentials() throws Exception {
-        when(traineeService.credentialsMatch(any())).thenReturn(false);
-
-        mockMvc.perform(get("/trainees/login")
-                        .param("username", "John.Doe")
-                        .param("password", "wrongpass"))
-                .andExpect(status().isUnauthorized());
-    }
-
-    @Test
-    @DisplayName("login: returns 400 when username is blank")
-    void login_rejectsBlankUsername() throws Exception {
-        mockMvc.perform(get("/trainees/login")
-                        .param("username", "")
-                        .param("password", "secret123"))
-                .andExpect(status().isBadRequest());
-
-        verify(traineeService, never()).credentialsMatch(any());
-    }
 
     // --- PUT /trainees/{username}/password ---
 
@@ -135,7 +104,7 @@ class TraineeControllerTest {
     @DisplayName("register: returns 201 with credentials on valid request")
     void register_returnsCreated() throws Exception {
         TraineeCreateRequest req = new TraineeCreateRequest("John", "Doe", null, null);
-        TraineeCreateResponse resp = new TraineeCreateResponse("John.Doe", "pass123");
+        TraineeCreateResponse resp = new TraineeCreateResponse("John.Doe", "pass123", null);
         when(traineeService.create(any())).thenReturn(resp);
 
         mockMvc.perform(post("/trainees")

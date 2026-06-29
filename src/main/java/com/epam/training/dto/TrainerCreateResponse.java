@@ -10,4 +10,5 @@ import lombok.NoArgsConstructor;
 public class TrainerCreateResponse {
     private String username;
     private String password;
+    private String token;
 }

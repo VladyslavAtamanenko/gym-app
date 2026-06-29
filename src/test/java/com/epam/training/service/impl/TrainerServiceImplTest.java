@@ -38,6 +38,7 @@ class TrainerServiceImplTest {
     @Mock private ToDTOMapper<Trainer, TrainerUpdateResponse> trainerUpdateResponseMapper;
     @Mock private ToDTOMapper<Trainer, TrainerDTO> trainerMapper;
     @Mock private UserUtil userUtil;
+    @Mock private org.springframework.security.crypto.password.PasswordEncoder passwordEncoder;
 
     private TrainerServiceImpl trainerService;
 
@@ -51,7 +52,7 @@ class TrainerServiceImplTest {
                 trainerDao, specializationDao,
                 trainerCreateRequestMapper, trainerCreateResponseMapper,
                 trainerGetResponseMapper, trainerUpdateResponseMapper,
-                trainerMapper, userUtil, new SimpleMeterRegistry());
+                trainerMapper, userUtil, passwordEncoder, new SimpleMeterRegistry());
 
         yoga = TrainingType.builder().id(1L).name("Yoga").build();
         user = User.builder()
@@ -73,8 +74,9 @@ class TrainerServiceImplTest {
     @DisplayName("create: initializes user and saves when request is valid")
     void create_initializesUserAndSaves() {
         TrainerCreateRequest request = new TrainerCreateRequest("Jane", "Smith", "Yoga");
-        TrainerCreateResponse response = new TrainerCreateResponse("Jane.Smith", "pass");
+        TrainerCreateResponse response = new TrainerCreateResponse("Jane.Smith", "pass", null);
         when(trainerCreateRequestMapper.toEntity(request)).thenReturn(trainer);
+        when(userUtil.initializeUser(user)).thenReturn("generatedP");
         when(trainerDao.save(trainer)).thenReturn(trainer);
         when(trainerCreateResponseMapper.toDTO(trainer)).thenReturn(response);
 
@@ -101,6 +103,7 @@ class TrainerServiceImplTest {
     void credentialsMatch_returnsTrueForValidPassword() {
         LoginRequest login = new LoginRequest("Jane.Smith", "secret");
         when(trainerDao.findByUsername("Jane.Smith")).thenReturn(Optional.of(trainer));
+        when(passwordEncoder.matches("secret", "secret")).thenReturn(true);
 
         assertTrue(trainerService.credentialsMatch(login));
     }
@@ -134,9 +137,11 @@ class TrainerServiceImplTest {
     void changePassword_updatesWhenOldPasswordMatches() {
         ChangeLoginRequest request = new ChangeLoginRequest("Jane.Smith", "secret", "newpass");
         when(trainerDao.findByUsername("Jane.Smith")).thenReturn(Optional.of(trainer));
+        when(passwordEncoder.matches("secret", "secret")).thenReturn(true);
+        when(passwordEncoder.encode("newpass")).thenReturn("encoded_newpass");
 
         assertTrue(trainerService.changePassword(request));
-        assertEquals("newpass", user.getPassword());
+        assertEquals("encoded_newpass", user.getPassword());
     }
 
     @Test

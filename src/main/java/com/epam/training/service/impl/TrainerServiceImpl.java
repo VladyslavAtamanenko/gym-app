@@ -15,6 +15,7 @@ import io.micrometer.core.instrument.MeterRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -39,6 +40,7 @@ public class TrainerServiceImpl implements TrainerService {
     private final ToDTOMapper<Trainer, TrainerUpdateResponse> trainerUpdateResponseMapper;
     private final ToDTOMapper<Trainer, TrainerDTO> trainerMapper;
     private final UserUtil userUtil;
+    private final PasswordEncoder passwordEncoder;
     private final Counter loginSuccess;
     private final Counter loginFailure;
 
@@ -52,6 +54,7 @@ public class TrainerServiceImpl implements TrainerService {
             ToDTOMapper<Trainer, TrainerUpdateResponse> trainerUpdateResponseMapper,
             ToDTOMapper<Trainer, TrainerDTO> trainerMapper,
             UserUtil userUtil,
+            PasswordEncoder passwordEncoder,
             MeterRegistry meterRegistry) {
         this.trainerDao = trainerDao;
         this.specializationDao = specializationDao;
@@ -61,6 +64,7 @@ public class TrainerServiceImpl implements TrainerService {
         this.trainerUpdateResponseMapper = trainerUpdateResponseMapper;
         this.trainerMapper = trainerMapper;
         this.userUtil = userUtil;
+        this.passwordEncoder = passwordEncoder;
         this.loginSuccess = Counter.builder("gym.login.attempts")
                 .tag("role", "trainer").tag("result", "success")
                 .description("Successful trainer login attempts")
@@ -83,10 +87,12 @@ public class TrainerServiceImpl implements TrainerService {
         Trainer created = trainerCreateRequestMapper.toEntity(trainer);
         created.setSpecialization(specializationDao.findByName(trainer.getSpecialization()));
         User user = created.getUser();
-        userUtil.initializeUser(user);
+        String plainPassword = userUtil.initializeUser(user);
         Trainer saved = trainerDao.save(created);
         log.info("Trainer created successfully. trainerId={}, trainerUsername={}", saved.getId(), saved.getUser().getUsername());
-        return trainerCreateResponseMapper.toDTO(saved);
+        TrainerCreateResponse response = trainerCreateResponseMapper.toDTO(saved);
+        response.setPassword(plainPassword);
+        return response;
     }
 
     @Override
@@ -103,7 +109,7 @@ public class TrainerServiceImpl implements TrainerService {
         }
         Trainer trainer = found.get();
         User user = trainer.getUser();
-        boolean passwordsMatch = user.getPassword().equals(credentials.getPassword());
+        boolean passwordsMatch = passwordEncoder.matches(credentials.getPassword(), user.getPassword());
         if (passwordsMatch) {
             log.info("Successful login. trainerId={}, trainerUsername={}", trainer.getId(), user.getUsername());
             loginSuccess.increment();
@@ -122,11 +128,10 @@ public class TrainerServiceImpl implements TrainerService {
         }
         validateChangePasswordRequest(request);
         Trainer updated = findTrainerOrThrow(request.getUsername());
-        String currentPassword = updated.getUser().getPassword();
-        boolean passwordsMatch = currentPassword.equals(request.getOldPassword());
+        boolean passwordsMatch = passwordEncoder.matches(request.getOldPassword(), updated.getUser().getPassword());
         boolean success = false;
         if (passwordsMatch) {
-            updated.getUser().setPassword(request.getNewPassword());
+            updated.getUser().setPassword(passwordEncoder.encode(request.getNewPassword()));
             log.info("Password updated successfully. trainerId={}, trainerUsername={}", updated.getId(), updated.getUser().getUsername());
             success = true;
         } else {
