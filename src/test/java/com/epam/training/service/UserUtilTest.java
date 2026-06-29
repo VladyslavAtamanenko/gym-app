@@ -12,6 +12,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.util.Set;
 
@@ -25,6 +26,7 @@ class UserUtilTest {
     @Mock private UserDao userDao;
     @Mock private UsernameGenerator usernameGenerator;
     @Mock private PasswordGenerator passwordGenerator;
+    @Mock private PasswordEncoder passwordEncoder;
 
     @InjectMocks
     private UserUtil userUtil;
@@ -41,18 +43,20 @@ class UserUtilTest {
     }
 
     @Test
-    @DisplayName("initializeUser: sets generated username, password, and isActive=true")
+    @DisplayName("initializeUser: sets generated username, hashed password, isActive=true and returns plaintext")
     void initializeUser_setsAllFields() {
         when(userDao.findAllUsernames()).thenReturn(Set.of("Alice.Smith", "Bob.Jones"));
         when(usernameGenerator.generate(eq("John"), eq("Doe"), anySet())).thenReturn("John.Doe");
         when(passwordGenerator.generate()).thenReturn("generatedP");
+        when(passwordEncoder.encode("generatedP")).thenReturn("$2a$hashed");
 
         User user = makeUser(null, "John", "Doe", null);
-        userUtil.initializeUser(user);
+        String plaintext = userUtil.initializeUser(user);
 
         assertEquals("John.Doe", user.getUsername());
-        assertEquals("generatedP", user.getPassword());
+        assertEquals("$2a$hashed", user.getPassword());
         assertTrue(user.getIsActive());
+        assertEquals("generatedP", plaintext);
     }
 
     @Test
@@ -61,6 +65,7 @@ class UserUtilTest {
         when(userDao.findAllUsernames()).thenReturn(Set.of("Trainee.One", "Trainer.One"));
         when(usernameGenerator.generate(anyString(), anyString(), anySet())).thenReturn("New.User");
         when(passwordGenerator.generate()).thenReturn("pass123456");
+        when(passwordEncoder.encode(anyString())).thenReturn("$2a$hashed");
 
         User user = makeUser(null, "New", "User", null);
         userUtil.initializeUser(user);
@@ -76,6 +81,7 @@ class UserUtilTest {
         when(userDao.findAllUsernames()).thenReturn(Set.of());
         when(usernameGenerator.generate(eq("Jane"), eq("Doe"), anySet())).thenReturn("Jane.Doe");
         when(passwordGenerator.generate()).thenReturn("pass123456");
+        when(passwordEncoder.encode(anyString())).thenReturn("$2a$hashed");
 
         User user = makeUser(null, "Jane", "Doe", null);
         userUtil.initializeUser(user);

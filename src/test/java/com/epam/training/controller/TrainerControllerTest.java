@@ -72,40 +72,6 @@ class TrainerControllerTest {
                 .build();
     }
 
-    // --- GET /trainers/login ---
-
-    @Test
-    @DisplayName("login: returns 200 when credentials are valid")
-    void login_returnsOkOnValidCredentials() throws Exception {
-        when(trainerService.credentialsMatch(any())).thenReturn(true);
-
-        mockMvc.perform(get("/trainers/login")
-                        .param("username", "Alice.Smith")
-                        .param("password", "secret123"))
-                .andExpect(status().isOk());
-    }
-
-    @Test
-    @DisplayName("login: returns 401 when credentials are invalid")
-    void login_returnsUnauthorizedOnInvalidCredentials() throws Exception {
-        when(trainerService.credentialsMatch(any())).thenReturn(false);
-
-        mockMvc.perform(get("/trainers/login")
-                        .param("username", "Alice.Smith")
-                        .param("password", "wrongpass"))
-                .andExpect(status().isUnauthorized());
-    }
-
-    @Test
-    @DisplayName("login: returns 400 when username is blank")
-    void login_rejectsBlankUsername() throws Exception {
-        mockMvc.perform(get("/trainers/login")
-                        .param("username", "")
-                        .param("password", "secret123"))
-                .andExpect(status().isBadRequest());
-
-        verify(trainerService, never()).credentialsMatch(any());
-    }
 
     // --- PUT /trainers/{username}/password ---
 

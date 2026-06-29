@@ -76,6 +76,7 @@ class TraineeServiceImplTest {
         TraineeCreateRequest request = new TraineeCreateRequest("John", "Doe", LocalDate.of(1990, 1, 1), "Street");
         TraineeCreateResponse response = new TraineeCreateResponse("John.Doe", "pass");
         when(traineeCreateRequestMapper.toEntity(request)).thenReturn(trainee);
+        when(userUtil.initializeUser(user)).thenReturn("generatedP");
         when(traineeDao.save(trainee)).thenReturn(trainee);
         when(traineeCreateResponseMapper.toDTO(trainee)).thenReturn(response);
 

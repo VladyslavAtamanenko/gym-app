@@ -45,7 +45,7 @@ public class TraineeDaoImpl implements TraineeDao {
     public Optional<Trainee> findByUsername(String username) {
 
         TypedQuery<Trainee> query = entityManager.createQuery(
-                "SELECT t FROM Trainee t WHERE t.user.username = :username",
+                "SELECT t FROM Trainee t JOIN FETCH t.user WHERE t.user.username = :username",
                 Trainee.class
         );
 

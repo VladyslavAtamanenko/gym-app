@@ -82,10 +82,12 @@ public class TraineeServiceImpl implements TraineeService {
         log.debug("Creating trainee from request");
         Trainee created = traineeCreateRequestMapper.toEntity(trainee);
         User user = created.getUser();
-        userUtil.initializeUser(user);
+        String plainPassword = userUtil.initializeUser(user);
         Trainee saved = traineeDao.save(created);
         log.info("Trainee created successfully. traineeUsername={}", saved.getUser().getUsername());
-        return traineeCreateResponseMapper.toDTO(saved);
+        TraineeCreateResponse response = traineeCreateResponseMapper.toDTO(saved);
+        response.setPassword(plainPassword);
+        return response;
     }
 
     @Override

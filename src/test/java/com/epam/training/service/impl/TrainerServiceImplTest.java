@@ -75,6 +75,7 @@ class TrainerServiceImplTest {
         TrainerCreateRequest request = new TrainerCreateRequest("Jane", "Smith", "Yoga");
         TrainerCreateResponse response = new TrainerCreateResponse("Jane.Smith", "pass");
         when(trainerCreateRequestMapper.toEntity(request)).thenReturn(trainer);
+        when(userUtil.initializeUser(user)).thenReturn("generatedP");
         when(trainerDao.save(trainer)).thenReturn(trainer);
         when(trainerCreateResponseMapper.toDTO(trainer)).thenReturn(response);
 

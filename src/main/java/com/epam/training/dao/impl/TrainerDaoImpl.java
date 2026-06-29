@@ -56,7 +56,7 @@ public class TrainerDaoImpl implements TrainerDao {
     @Override
     public Optional<Trainer> findByUsername(String username) {
         TypedQuery<Trainer> query = entityManager.createQuery(
-                "SELECT t FROM Trainer t WHERE t.user.username = :username",
+                "SELECT t FROM Trainer t JOIN FETCH t.user WHERE t.user.username = :username",
                 Trainer.class
         );
 

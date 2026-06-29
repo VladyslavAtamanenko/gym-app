@@ -9,9 +9,9 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
-import jakarta.validation.constraints.NotBlank;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.web.PagedResourcesAssembler;
 import org.springframework.hateoas.EntityModel;
@@ -33,32 +33,17 @@ public class TrainerController {
     }
 
     @Operation(
-            summary = "Trainer login",
-            description = "Verifies trainer credentials; returns 200 if valid, 401 if not"
-    )
-    @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Credentials are valid"),
-            @ApiResponse(responseCode = "400", description = "username or password is blank"),
-            @ApiResponse(responseCode = "401", description = "Invalid credentials")
-    })
-    @GetMapping("/login")
-    public ResponseEntity<Void> login(
-            @NotBlank @RequestParam String username,
-            @NotBlank @RequestParam String password) {
-        boolean valid = trainerService.credentialsMatch(new LoginRequest(username, password));
-        return valid ? ResponseEntity.ok().build() : ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-    }
-
-    @Operation(
             summary = "Change trainer password",
             description = "Updates the trainer's password after verifying the old one"
     )
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Password changed successfully"),
             @ApiResponse(responseCode = "400", description = "Validation failed — any field is blank"),
-            @ApiResponse(responseCode = "401", description = "Old password does not match"),
+            @ApiResponse(responseCode = "401", description = "Old password does not match or missing JWT"),
+            @ApiResponse(responseCode = "403", description = "Access denied — not this trainer's account"),
             @ApiResponse(responseCode = "404", description = "Trainer not found")
     })
+    @PreAuthorize("hasRole('TRAINER') and @gymSecurity.isOwner(#username, authentication)")
     @PutMapping(value = "/{username}/password", consumes = "application/json")
     public ResponseEntity<Void> changePassword(
             @Parameter(description = "Trainer's username", required = true, example = "Alice.Smith")
@@ -87,8 +72,11 @@ public class TrainerController {
     )
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Trainer profile returned"),
+            @ApiResponse(responseCode = "401", description = "Missing or invalid JWT token"),
+            @ApiResponse(responseCode = "403", description = "Access denied — not this trainer's account"),
             @ApiResponse(responseCode = "404", description = "Trainer not found")
     })
+    @PreAuthorize("hasRole('TRAINER') and @gymSecurity.isOwner(#username, authentication)")
     @GetMapping("/{username}")
     public ResponseEntity<TrainerGetResponse> getByUsername(
             @Parameter(description = "Trainer's username", required = true, example = "Alice.Smith")
@@ -103,8 +91,11 @@ public class TrainerController {
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Profile updated successfully"),
             @ApiResponse(responseCode = "400", description = "Validation failed"),
+            @ApiResponse(responseCode = "401", description = "Missing or invalid JWT token"),
+            @ApiResponse(responseCode = "403", description = "Access denied — not this trainer's account"),
             @ApiResponse(responseCode = "404", description = "Trainer not found")
     })
+    @PreAuthorize("hasRole('TRAINER') and @gymSecurity.isOwner(#username, authentication)")
     @PutMapping(value = "/{username}", consumes = "application/json")
     public ResponseEntity<TrainerUpdateResponse> update(
             @Parameter(description = "Trainer's username", required = true, example = "Alice.Smith")
@@ -121,8 +112,11 @@ public class TrainerController {
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Paged list of trainers returned"),
             @ApiResponse(responseCode = "400", description = "Validation failed — page or size is less than 1, or pagination parameters are not valid integers"),
+            @ApiResponse(responseCode = "401", description = "Missing or invalid JWT token"),
+            @ApiResponse(responseCode = "403", description = "Access denied — not this trainee's account"),
             @ApiResponse(responseCode = "404", description = "Trainee not found")
     })
+    @PreAuthorize("hasRole('TRAINEE') and @gymSecurity.isOwner(#username, authentication)")
     @GetMapping("/not-assigned/{username}")
     public ResponseEntity<PagedModel<EntityModel<TrainerDTO>>> getNotAssignedOnTrainee(
             @Parameter(description = "Trainee's username", required = true, example = "John.Doe")
@@ -143,8 +137,11 @@ public class TrainerController {
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Status updated successfully"),
             @ApiResponse(responseCode = "400", description = "isActive field is null"),
+            @ApiResponse(responseCode = "401", description = "Missing or invalid JWT token"),
+            @ApiResponse(responseCode = "403", description = "Access denied — not this trainer's account"),
             @ApiResponse(responseCode = "404", description = "Trainer not found")
     })
+    @PreAuthorize("hasRole('TRAINER') and @gymSecurity.isOwner(#username, authentication)")
     @PatchMapping(value = "/{username}", consumes = "application/json")
     public ResponseEntity<Void> setActive(
             @Parameter(description = "Trainer's username", required = true, example = "Alice.Smith")

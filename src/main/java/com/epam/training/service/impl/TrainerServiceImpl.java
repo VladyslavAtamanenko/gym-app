@@ -83,10 +83,12 @@ public class TrainerServiceImpl implements TrainerService {
         Trainer created = trainerCreateRequestMapper.toEntity(trainer);
         created.setSpecialization(specializationDao.findByName(trainer.getSpecialization()));
         User user = created.getUser();
-        userUtil.initializeUser(user);
+        String plainPassword = userUtil.initializeUser(user);
         Trainer saved = trainerDao.save(created);
         log.info("Trainer created successfully. trainerId={}, trainerUsername={}", saved.getId(), saved.getUser().getUsername());
-        return trainerCreateResponseMapper.toDTO(saved);
+        TrainerCreateResponse response = trainerCreateResponseMapper.toDTO(saved);
+        response.setPassword(plainPassword);
+        return response;
     }
 
     @Override
