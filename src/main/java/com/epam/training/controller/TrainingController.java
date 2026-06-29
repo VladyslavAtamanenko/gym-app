@@ -13,6 +13,7 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.web.PagedResourcesAssembler;
 import org.springframework.hateoas.EntityModel;
@@ -41,8 +42,11 @@ public class TrainingController {
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Training session created"),
             @ApiResponse(responseCode = "400", description = "Validation failed — required fields missing or invalid"),
+            @ApiResponse(responseCode = "401", description = "Missing or invalid JWT token"),
+            @ApiResponse(responseCode = "403", description = "Access denied — authenticated user is not the trainee or trainer in this session"),
             @ApiResponse(responseCode = "404", description = "Trainee or trainer not found")
     })
+    @PreAuthorize("@gymSecurity.isTrainingParticipant(#req, authentication)")
     @PostMapping(consumes = "application/json")
     public ResponseEntity<Void> create(@Valid @RequestBody TrainingCreateRequest req) {
         trainingService.create(req);
@@ -57,8 +61,11 @@ public class TrainingController {
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Paged training list returned"),
             @ApiResponse(responseCode = "400", description = "Validation failed — page or size is less than 1, or from/to is not a valid ISO-8601 date (yyyy-MM-dd)"),
+            @ApiResponse(responseCode = "401", description = "Missing or invalid JWT token"),
+            @ApiResponse(responseCode = "403", description = "Access denied — not this trainee's account"),
             @ApiResponse(responseCode = "404", description = "Trainee not found")
     })
+    @PreAuthorize("hasRole('TRAINEE') and @gymSecurity.isOwner(#username, authentication)")
     @GetMapping("/trainee/{username}")
     public ResponseEntity<PagedModel<EntityModel<GetTrainingsByTraineeResponse>>> getByTrainee(
             @Parameter(description = "Trainee's username", required = true, example = "John.Doe")
@@ -89,8 +96,11 @@ public class TrainingController {
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Paged training list returned"),
             @ApiResponse(responseCode = "400", description = "Validation failed — page or size is less than 1, or from/to is not a valid ISO-8601 date (yyyy-MM-dd)"),
+            @ApiResponse(responseCode = "401", description = "Missing or invalid JWT token"),
+            @ApiResponse(responseCode = "403", description = "Access denied — not this trainer's account"),
             @ApiResponse(responseCode = "404", description = "Trainer not found")
     })
+    @PreAuthorize("hasRole('TRAINER') and @gymSecurity.isOwner(#username, authentication)")
     @GetMapping("/trainer/{username}")
     public ResponseEntity<PagedModel<EntityModel<GetTrainingsByTrainerResponse>>> getByTrainer(
             @Parameter(description = "Trainer's username", required = true, example = "Alice.Smith")

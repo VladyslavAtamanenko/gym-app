@@ -9,9 +9,13 @@ import com.epam.training.mapper.ToEntityMapper;
 import com.epam.training.model.Trainer;
 import com.epam.training.model.User;
 import com.epam.training.service.TrainerService;
+import io.micrometer.core.annotation.Counted;
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.MeterRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -36,6 +40,9 @@ public class TrainerServiceImpl implements TrainerService {
     private final ToDTOMapper<Trainer, TrainerUpdateResponse> trainerUpdateResponseMapper;
     private final ToDTOMapper<Trainer, TrainerDTO> trainerMapper;
     private final UserUtil userUtil;
+    private final PasswordEncoder passwordEncoder;
+    private final Counter loginSuccess;
+    private final Counter loginFailure;
 
     @Autowired
     public TrainerServiceImpl(
@@ -46,7 +53,9 @@ public class TrainerServiceImpl implements TrainerService {
             ToDTOMapper<Trainer, TrainerGetResponse> trainerGetResponseMapper,
             ToDTOMapper<Trainer, TrainerUpdateResponse> trainerUpdateResponseMapper,
             ToDTOMapper<Trainer, TrainerDTO> trainerMapper,
-            UserUtil userUtil) {
+            UserUtil userUtil,
+            PasswordEncoder passwordEncoder,
+            MeterRegistry meterRegistry) {
         this.trainerDao = trainerDao;
         this.specializationDao = specializationDao;
         this.trainerCreateRequestMapper = trainerCreateRequestMapper;
@@ -55,8 +64,18 @@ public class TrainerServiceImpl implements TrainerService {
         this.trainerUpdateResponseMapper = trainerUpdateResponseMapper;
         this.trainerMapper = trainerMapper;
         this.userUtil = userUtil;
+        this.passwordEncoder = passwordEncoder;
+        this.loginSuccess = Counter.builder("gym.login.attempts")
+                .tag("role", "trainer").tag("result", "success")
+                .description("Successful trainer login attempts")
+                .register(meterRegistry);
+        this.loginFailure = Counter.builder("gym.login.attempts")
+                .tag("role", "trainer").tag("result", "failure")
+                .description("Failed trainer login attempts")
+                .register(meterRegistry);
     }
 
+    @Counted(value = "gym.trainer.registrations", description = "Total trainer registrations")
     @Override
     public TrainerCreateResponse create(TrainerCreateRequest trainer) {
         if (trainer == null) {
@@ -68,10 +87,12 @@ public class TrainerServiceImpl implements TrainerService {
         Trainer created = trainerCreateRequestMapper.toEntity(trainer);
         created.setSpecialization(specializationDao.findByName(trainer.getSpecialization()));
         User user = created.getUser();
-        userUtil.initializeUser(user);
+        String plainPassword = userUtil.initializeUser(user);
         Trainer saved = trainerDao.save(created);
         log.info("Trainer created successfully. trainerId={}, trainerUsername={}", saved.getId(), saved.getUser().getUsername());
-        return trainerCreateResponseMapper.toDTO(saved);
+        TrainerCreateResponse response = trainerCreateResponseMapper.toDTO(saved);
+        response.setPassword(plainPassword);
+        return response;
     }
 
     @Override
@@ -88,11 +109,13 @@ public class TrainerServiceImpl implements TrainerService {
         }
         Trainer trainer = found.get();
         User user = trainer.getUser();
-        boolean passwordsMatch = user.getPassword().equals(credentials.getPassword());
+        boolean passwordsMatch = passwordEncoder.matches(credentials.getPassword(), user.getPassword());
         if (passwordsMatch) {
             log.info("Successful login. trainerId={}, trainerUsername={}", trainer.getId(), user.getUsername());
+            loginSuccess.increment();
         } else {
             log.warn("Login failed because provided password doesn't match current password");
+            loginFailure.increment();
         }
         return passwordsMatch;
     }
@@ -105,11 +128,10 @@ public class TrainerServiceImpl implements TrainerService {
         }
         validateChangePasswordRequest(request);
         Trainer updated = findTrainerOrThrow(request.getUsername());
-        String currentPassword = updated.getUser().getPassword();
-        boolean passwordsMatch = currentPassword.equals(request.getOldPassword());
+        boolean passwordsMatch = passwordEncoder.matches(request.getOldPassword(), updated.getUser().getPassword());
         boolean success = false;
         if (passwordsMatch) {
-            updated.getUser().setPassword(request.getNewPassword());
+            updated.getUser().setPassword(passwordEncoder.encode(request.getNewPassword()));
             log.info("Password updated successfully. trainerId={}, trainerUsername={}", updated.getId(), updated.getUser().getUsername());
             success = true;
         } else {

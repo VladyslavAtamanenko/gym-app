@@ -7,6 +7,7 @@ import com.epam.training.util.UsernameGenerator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
 import java.util.Set;
@@ -19,11 +20,19 @@ public class UserUtil {
     @Autowired
     private UserDao userDao;
 
+    @Autowired
+    private PasswordEncoder passwordEncoder;
+
     private UsernameGenerator usernameGenerator;
 
     private PasswordGenerator passwordGenerator;
 
-    public void initializeUser(User user) {
+    /**
+     * Initializes username, hashed password, and active flag on a new user.
+     *
+     * @return the generated plaintext password (for inclusion in the create response)
+     */
+    public String initializeUser(User user) {
         if (user == null) {
             log.warn("Rejected user initialization because user is null");
             throw new IllegalArgumentException("User is null");
@@ -32,10 +41,12 @@ public class UserUtil {
         Set<String> existingUsernames = userDao.findAllUsernames();
         log.debug("Collected existing usernames for uniqueness check. count={}", existingUsernames.size());
 
+        String plainPassword = passwordGenerator.generate();
         user.setUsername(usernameGenerator.generate(user.getFirstName(), user.getLastName(), existingUsernames));
-        user.setPassword(passwordGenerator.generate());
+        user.setPassword(passwordEncoder.encode(plainPassword));
         user.setIsActive(true);
         log.info("User initialized for new profile. userId={}", user.getId());
+        return plainPassword;
     }
 
     public User updateUser(User oldUser, User newUser) {

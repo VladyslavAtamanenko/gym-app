@@ -13,6 +13,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -38,6 +39,7 @@ class TraineeServiceImplTest {
     @Mock private ToDTOMapper<Trainee, TraineeGetResponse> traineeGetResponseMapper;
     @Mock private ToDTOMapper<Trainer, TrainerDTO> trainerMapper;
     @Mock private UserUtil userUtil;
+    @Mock private org.springframework.security.crypto.password.PasswordEncoder passwordEncoder;
 
     private TraineeServiceImpl traineeService;
 
@@ -50,7 +52,7 @@ class TraineeServiceImplTest {
                 traineeDao, trainerDao,
                 traineeCreateRequestMapper, traineeCreateResponseMapper,
                 traineeUpdateResponseMapper, traineeGetResponseMapper,
-                trainerMapper, userUtil);
+                trainerMapper, userUtil, passwordEncoder, new SimpleMeterRegistry());
 
         user = User.builder()
                 .id(1L)
@@ -73,8 +75,9 @@ class TraineeServiceImplTest {
     @DisplayName("create: initializes user and saves when request is valid")
     void create_initializesUserAndSaves() {
         TraineeCreateRequest request = new TraineeCreateRequest("John", "Doe", LocalDate.of(1990, 1, 1), "Street");
-        TraineeCreateResponse response = new TraineeCreateResponse("John.Doe", "pass");
+        TraineeCreateResponse response = new TraineeCreateResponse("John.Doe", "pass", null);
         when(traineeCreateRequestMapper.toEntity(request)).thenReturn(trainee);
+        when(userUtil.initializeUser(user)).thenReturn("generatedP");
         when(traineeDao.save(trainee)).thenReturn(trainee);
         when(traineeCreateResponseMapper.toDTO(trainee)).thenReturn(response);
 
@@ -102,6 +105,7 @@ class TraineeServiceImplTest {
     void credentialsMatch_returnsTrueForValidPassword() {
         LoginRequest login = new LoginRequest("John.Doe", "secret");
         when(traineeDao.findByUsername("John.Doe")).thenReturn(Optional.of(trainee));
+        when(passwordEncoder.matches("secret", "secret")).thenReturn(true);
 
         assertTrue(traineeService.credentialsMatch(login));
     }
@@ -135,9 +139,11 @@ class TraineeServiceImplTest {
     void changePassword_updatesWhenOldPasswordMatches() {
         ChangeLoginRequest request = new ChangeLoginRequest("John.Doe", "secret", "newpass");
         when(traineeDao.findByUsername("John.Doe")).thenReturn(Optional.of(trainee));
+        when(passwordEncoder.matches("secret", "secret")).thenReturn(true);
+        when(passwordEncoder.encode("newpass")).thenReturn("encoded_newpass");
 
         assertTrue(traineeService.changePassword(request));
-        assertEquals("newpass", user.getPassword());
+        assertEquals("encoded_newpass", user.getPassword());
     }
 
     @Test

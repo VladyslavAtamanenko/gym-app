@@ -11,9 +11,13 @@ import com.epam.training.model.Trainee;
 import com.epam.training.model.Trainer;
 import com.epam.training.model.User;
 import com.epam.training.service.TraineeService;
+import io.micrometer.core.annotation.Counted;
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.MeterRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -36,6 +40,9 @@ public class TraineeServiceImpl implements TraineeService {
     private final ToDTOMapper<Trainee, TraineeGetResponse> traineeGetResponseMapper;
     private final ToDTOMapper<Trainer, TrainerDTO> trainerMapper;
     private final UserUtil userUtil;
+    private final PasswordEncoder passwordEncoder;
+    private final Counter loginSuccess;
+    private final Counter loginFailure;
 
     @Autowired
     public TraineeServiceImpl(
@@ -46,7 +53,9 @@ public class TraineeServiceImpl implements TraineeService {
             ToDTOMapper<Trainee, TraineeUpdateResponse> traineeUpdateResponseMapper,
             ToDTOMapper<Trainee, TraineeGetResponse> traineeGetResponseMapper,
             ToDTOMapper<Trainer, TrainerDTO> trainerMapper,
-            UserUtil userUtil) {
+            UserUtil userUtil,
+            PasswordEncoder passwordEncoder,
+            MeterRegistry meterRegistry) {
         this.traineeDao = traineeDao;
         this.trainerDao = trainerDao;
         this.traineeCreateRequestMapper = traineeCreateRequestMapper;
@@ -55,8 +64,18 @@ public class TraineeServiceImpl implements TraineeService {
         this.traineeGetResponseMapper = traineeGetResponseMapper;
         this.trainerMapper = trainerMapper;
         this.userUtil = userUtil;
+        this.passwordEncoder = passwordEncoder;
+        this.loginSuccess = Counter.builder("gym.login.attempts")
+                .tag("role", "trainee").tag("result", "success")
+                .description("Successful trainee login attempts")
+                .register(meterRegistry);
+        this.loginFailure = Counter.builder("gym.login.attempts")
+                .tag("role", "trainee").tag("result", "failure")
+                .description("Failed trainee login attempts")
+                .register(meterRegistry);
     }
 
+    @Counted(value = "gym.trainee.registrations", description = "Total trainee registrations")
     @Override
     public TraineeCreateResponse create(TraineeCreateRequest trainee) {
         if (trainee == null) {
@@ -67,10 +86,12 @@ public class TraineeServiceImpl implements TraineeService {
         log.debug("Creating trainee from request");
         Trainee created = traineeCreateRequestMapper.toEntity(trainee);
         User user = created.getUser();
-        userUtil.initializeUser(user);
+        String plainPassword = userUtil.initializeUser(user);
         Trainee saved = traineeDao.save(created);
         log.info("Trainee created successfully. traineeUsername={}", saved.getUser().getUsername());
-        return traineeCreateResponseMapper.toDTO(saved);
+        TraineeCreateResponse response = traineeCreateResponseMapper.toDTO(saved);
+        response.setPassword(plainPassword);
+        return response;
     }
 
     @Override
@@ -87,11 +108,13 @@ public class TraineeServiceImpl implements TraineeService {
         }
         Trainee trainee = found.get();
         User user = trainee.getUser();
-        boolean passwordsMatch = user.getPassword().equals(credentials.getPassword());
+        boolean passwordsMatch = passwordEncoder.matches(credentials.getPassword(), user.getPassword());
         if (passwordsMatch) {
             log.info("Successful login. traineeId={}, traineeUsername={}", trainee.getId(), user.getUsername());
+            loginSuccess.increment();
         } else {
             log.warn("Login failed because provided password doesn't match current password");
+            loginFailure.increment();
         }
         return passwordsMatch;
     }
@@ -108,11 +131,10 @@ public class TraineeServiceImpl implements TraineeService {
                     log.warn("Password change failed because trainee was not found. traineeUsername={}", request.getUsername());
                     return new TraineeNotFoundException(request.getUsername());
                 });
-        String currentPassword = updated.getUser().getPassword();
-        boolean passwordsMatch = currentPassword.equals(request.getOldPassword());
+        boolean passwordsMatch = passwordEncoder.matches(request.getOldPassword(), updated.getUser().getPassword());
         boolean success = false;
         if (passwordsMatch) {
-            updated.getUser().setPassword(request.getNewPassword());
+            updated.getUser().setPassword(passwordEncoder.encode(request.getNewPassword()));
             log.info("Password updated successfully. traineeId={}, traineeUsername={}", updated.getId(), updated.getUser().getUsername());
             success = true;
         } else {
@@ -202,6 +224,7 @@ public class TraineeServiceImpl implements TraineeService {
         return trainee.getTrainers().stream().map(trainerMapper::toDTO).toList();
     }
 
+    @Counted(value = "gym.trainee.deletions", description = "Total trainee deletions")
     @Override
     public void delete(String username) {
         ValidationUtil.requireNonBlank(username, "username");
